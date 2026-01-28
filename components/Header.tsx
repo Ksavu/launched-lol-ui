@@ -15,16 +15,16 @@ export const Header = () => {
             
             {/* Logo */}
             <Link href="/">
-              <div className="h-12 w-auto flex items-center">
-                <Image
-                  src="/logo.jpg"
-                  alt="Launched.lol Logo"
-                  width={160}
-                  height={48}
-                  className="object-contain"
-                  priority
-                />
-              </div>
+  <div className="h-12 w-auto flex items-center">
+    <Image
+      src="/logo.jpg"
+      alt="Launched.lol Logo"
+      width={160}          // max width
+      height={48}          // restrict height to navbar size
+      className="object-contain"
+      priority
+    />
+  </div>
             </Link>
 
             {/* Navigation */}
