@@ -47,7 +47,7 @@ export default function Home() {
             <RocketLaunchIcon className="h-12 w-12 text-purple-500 mb-4" />
             <h3 className="text-2xl font-bold text-white mb-2">Two-Tier Launches</h3>
             <p className="text-gray-400">
-              Choose Free ($2) for quick launches or Premium ($94) for featured placement, 
+              Choose Free for quick launches or Premium (0.5 SOL) for featured placement, 
               anti-bot protection, and more visibility.
             </p>
           </div>
