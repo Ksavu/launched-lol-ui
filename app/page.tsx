@@ -40,7 +40,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features */}
+      {/* Features Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="grid md:grid-cols-3 gap-8">
           <div className="bg-gray-800 p-8 rounded-xl border border-gray-700">
@@ -72,23 +72,23 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats */}
+      {/* Stats Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="grid md:grid-cols-3 gap-8">
-          {/* Card 1 */}
-          <div className="bg-gradient-to-r from-[#FCD52F] via-[#FFD845] to-[#FCD52F] p-12 rounded-2xl text-center text-black shadow-lg">
+          {/* Tokens Launched */}
+          <div className="bg-gradient-to-r from-[#FCD52F] via-[#FFD845] to-[#FCD52F] p-12 rounded-2xl text-center text-black shadow-lg transform transition hover:scale-105">
             <div className="text-4xl font-bold mb-2">0</div>
             <div>Tokens Launched</div>
           </div>
 
-          {/* Card 2 */}
-          <div className="bg-gradient-to-r from-[#FCD52F] via-[#FFD845] to-[#FCD52F] p-12 rounded-2xl text-center text-black shadow-lg">
+          {/* Total Volume */}
+          <div className="bg-gradient-to-r from-[#FCD52F] via-[#FFD845] to-[#FCD52F] p-12 rounded-2xl text-center text-black shadow-lg transform transition hover:scale-105">
             <div className="text-4xl font-bold mb-2">$0</div>
             <div>Total Volume</div>
           </div>
 
-          {/* Card 3 */}
-          <div className="bg-gradient-to-r from-[#FCD52F] via-[#FFD845] to-[#FCD52F] p-12 rounded-2xl text-center text-black shadow-lg">
+          {/* Graduated Tokens */}
+          <div className="bg-gradient-to-r from-[#FCD52F] via-[#FFD845] to-[#FCD52F] p-12 rounded-2xl text-center text-black shadow-lg transform transition hover:scale-105">
             <div className="text-4xl font-bold mb-2">0</div>
             <div>Graduated Tokens</div>
           </div>
