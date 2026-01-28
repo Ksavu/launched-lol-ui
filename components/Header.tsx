@@ -13,19 +13,17 @@ export const Header = () => {
           {/* Logo + Nav */}
           <div className="flex items-center space-x-8">
             
-            {/* Logo with gradient overlay and hover effect */}
+            {/* Logo */}
             <Link href="/">
-              <div className="h-10 flex items-center relative group transition-transform duration-300 hover:scale-105">
+              <div className="h-12 w-auto flex items-center">
                 <Image
                   src="/logo.jpg"
                   alt="Launched.lol Logo"
-                  width={140}
-                  height={40}
-                  className="object-contain drop-shadow-[0_0_10px_#FCD52F] relative z-10"
+                  width={160}
+                  height={48}
+                  className="object-contain"
                   priority
                 />
-                {/* Gradient overlay shine */}
-                <div className="absolute inset-0 bg-gradient-to-r from-[#FCD52F] via-[#FFD845] to-[#FCD52F] opacity-20 pointer-events-none rounded transition-opacity duration-500 group-hover:opacity-50"></div>
               </div>
             </Link>
 
