@@ -1,0 +1,387 @@
+{
+  "address": "7F4JYKAEs7VhVd9P8E1wHhd8aiwtKYeo1tTxabDqpCvX",
+  "metadata": {
+    "name": "token_factory",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "create_token",
+      "discriminator": [
+        84,
+        52,
+        204,
+        228,
+        24,
+        140,
+        234,
+        75
+      ],
+      "accounts": [
+        {
+          "name": "global_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  108,
+                  111,
+                  98,
+                  97,
+                  108,
+                  45,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_metadata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  107,
+                  101,
+                  110,
+                  45,
+                  109,
+                  101,
+                  116,
+                  97,
+                  100,
+                  97,
+                  116,
+                  97
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "bonding_curve"
+        },
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "symbol",
+          "type": "string"
+        },
+        {
+          "name": "uri",
+          "type": "string"
+        },
+        {
+          "name": "tier",
+          "type": {
+            "defined": {
+              "name": "LaunchTier"
+            }
+          }
+        },
+        {
+          "name": "category",
+          "type": {
+            "defined": {
+              "name": "TokenCategory"
+            }
+          }
+        },
+        {
+          "name": "launch_delay_seconds",
+          "type": "i64"
+        },
+        {
+          "name": "anti_bot_enabled",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "initialize",
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "global_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  103,
+                  108,
+                  111,
+                  98,
+                  97,
+                  108,
+                  45,
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "GlobalState",
+      "discriminator": [
+        163,
+        46,
+        74,
+        168,
+        216,
+        123,
+        133,
+        98
+      ]
+    },
+    {
+      "name": "TokenMetadata",
+      "discriminator": [
+        237,
+        215,
+        132,
+        182,
+        24,
+        127,
+        175,
+        173
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "NameTooLong",
+      "msg": "Token name too long (max 32 characters)"
+    },
+    {
+      "code": 6001,
+      "name": "SymbolTooLong",
+      "msg": "Token symbol too long (max 10 characters)"
+    },
+    {
+      "code": 6002,
+      "name": "UriTooLong",
+      "msg": "URI too long (max 200 characters)"
+    },
+    {
+      "code": 6003,
+      "name": "AntiBotRequiresPremium",
+      "msg": "Anti-bot protection requires Premium tier"
+    }
+  ],
+  "types": [
+    {
+      "name": "GlobalState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "creation_fee_free",
+            "type": "u64"
+          },
+          {
+            "name": "creation_fee_premium",
+            "type": "u64"
+          },
+          {
+            "name": "total_tokens_created",
+            "type": "u64"
+          },
+          {
+            "name": "total_premium_tokens",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LaunchTier",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Free"
+          },
+          {
+            "name": "Premium"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenCategory",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Meme"
+          },
+          {
+            "name": "AI"
+          },
+          {
+            "name": "Gaming"
+          },
+          {
+            "name": "DeFi"
+          },
+          {
+            "name": "NFT"
+          },
+          {
+            "name": "Other"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenMetadata",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "symbol",
+            "type": "string"
+          },
+          {
+            "name": "uri",
+            "type": "string"
+          },
+          {
+            "name": "tier",
+            "type": {
+              "defined": {
+                "name": "LaunchTier"
+              }
+            }
+          },
+          {
+            "name": "category",
+            "type": {
+              "defined": {
+                "name": "TokenCategory"
+              }
+            }
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "launch_time",
+            "type": "i64"
+          },
+          {
+            "name": "bonding_curve",
+            "type": "pubkey"
+          },
+          {
+            "name": "is_graduated",
+            "type": "bool"
+          },
+          {
+            "name": "is_featured",
+            "type": "bool"
+          },
+          {
+            "name": "anti_bot_enabled",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}

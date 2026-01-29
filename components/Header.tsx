@@ -3,8 +3,15 @@
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useEffect, useState } from 'react';
 
 export const Header = () => {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <header className="bg-black border-b border-yellow-500/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -37,9 +44,15 @@ export const Header = () => {
             </Link>
           </nav>
 
-          {/* Wallet Button - Responsive */}
+          {/* Wallet Button - Only render after mount */}
           <div className="flex-shrink-0">
-            <WalletMultiButton className="!bg-yellow-400 hover:!bg-yellow-500 !text-black !font-bold !text-xs sm:!text-sm !px-3 sm:!px-4 !py-2 !h-10 sm:!h-12" />
+            {mounted ? (
+              <WalletMultiButton className="!bg-yellow-400 hover:!bg-yellow-500 !text-black !font-bold !text-xs sm:!text-sm !px-3 sm:!px-4 !py-2 !h-10 sm:!h-12" />
+            ) : (
+              <div className="bg-yellow-400 text-black font-bold text-xs sm:text-sm px-3 sm:px-4 py-2 h-10 sm:h-12 rounded-lg flex items-center">
+                Connect Wallet
+              </div>
+            )}
           </div>
         </div>
 
