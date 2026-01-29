@@ -3,16 +3,14 @@ import { WalletContextState } from '@solana/wallet-adapter-react';
 import { Connection, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Keypair } from '@solana/web3.js';
 import TokenFactoryIDL from './idl/token_factory.json';
 import BondingCurveIDL from './idl/bonding_curve.json';
-import { Idl } from '@coral-xyz/anchor';
 
-const TF_IDL =
-  (TokenFactoryIDL as any).default ?? TokenFactoryIDL;
+export const TOKEN_FACTORY_PROGRAM_ID = new PublicKey(
+  process.env.NEXT_PUBLIC_TOKEN_FACTORY_PROGRAM!
+);
 
-const BC_IDL =
-  (BondingCurveIDL as any).default ?? BondingCurveIDL;
-
-export const TOKEN_FACTORY_PROGRAM_ID = new PublicKey(TF_IDL.address);
-export const BONDING_CURVE_PROGRAM_ID = new PublicKey(BC_IDL.address);
+export const BONDING_CURVE_PROGRAM_ID = new PublicKey(
+  process.env.NEXT_PUBLIC_BONDING_CURVE_PROGRAM!
+);
 
 export const getProvider = (connection: Connection, wallet: WalletContextState) => {
   return new AnchorProvider(
@@ -23,21 +21,12 @@ export const getProvider = (connection: Connection, wallet: WalletContextState) 
 };
 
 export const getTokenFactoryProgram = (provider: AnchorProvider) => {
-  return new Program(
-    TF_IDL as Idl,
-    TOKEN_FACTORY_PROGRAM_ID,
-    provider as any
-  );
+  return new Program(TokenFactoryIDL as any, TOKEN_FACTORY_PROGRAM_ID, provider);
 };
 
 export const getBondingCurveProgram = (provider: AnchorProvider) => {
-  return new Program(
-    BC_IDL as Idl,
-    BONDING_CURVE_PROGRAM_ID,
-    provider as any
-  );
+  return new Program(BondingCurveIDL as any, BONDING_CURVE_PROGRAM_ID, provider);
 };
-
 
 export const getGlobalStatePDA = () => {
   return PublicKey.findProgramAddressSync(
