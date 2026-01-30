@@ -67,6 +67,10 @@ export const createToken = async (
   provider: AnchorProvider,
   params: CreateTokenParams
 ) => {
+  if (!provider.wallet.publicKey) {
+    throw new Error('Wallet not connected');
+  }
+
   const program = getTokenFactoryProgram(provider);
   const mintKeypair = Keypair.generate();
 
@@ -74,13 +78,13 @@ export const createToken = async (
   const [tokenMetadata] = getTokenMetadataPDA(mintKeypair.publicKey);
   const [bondingCurve] = getBondingCurvePDA(mintKeypair.publicKey);
 
-  // Borsh enum format: discriminator + empty object
-  const tierEnum = params.tier === 'Free' ? { Free: {} } : { Premium: {} };
+  const tierEnum =
+    params.tier === 'Free' ? { Free: {} } : { Premium: {} };
 
-  const categoryEnum: any = { [params.category]: {} };
+  const categoryEnum = { [params.category]: {} } as any;
 
-  try {
-    const tx = await (program.methods as any).create_token(
+  const tx = await program.methods
+    .createToken(
       params.name,
       params.symbol,
       params.uri,
@@ -101,16 +105,10 @@ export const createToken = async (
     .signers([mintKeypair])
     .rpc();
 
-    console.log('✅ Token created!', tx);
-
-    return {
-      success: true,
-      signature: tx,
-      mint: mintKeypair.publicKey.toBase58(),
-      bondingCurve: bondingCurve.toBase58(),
-    };
-  } catch (err: any) {
-    console.error('❌ Failed to create token:', err);
-    throw err;
-  }
+  return {
+    success: true,
+    signature: tx,
+    mint: mintKeypair.publicKey.toBase58(),
+    bondingCurve: bondingCurve.toBase58(),
+  };
 };
