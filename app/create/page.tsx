@@ -14,8 +14,8 @@ export default function CreateToken() {
     name: '',
     symbol: '',
     description: '',
-    tier: 'free' as 'free' | 'premium',
-    category: 'meme' as 'meme' | 'ai' | 'gaming' | 'defi' | 'nft' | 'other',
+    tier: 'free' as 'Free' | 'Premium',
+    category: 'meme' as 'Meme' | 'Ai' | 'Gaming' | 'DeFi' | 'Nft' | 'Other',
     antiBotEnabled: false,
     launchDelay: 60,
   });
@@ -120,8 +120,8 @@ const handleSubmit = async (e: React.FormEvent) => {
         name: '',
         symbol: '',
         description: '',
-        tier: 'free',
-        category: 'meme',
+        tier: 'Free',
+        category: 'Meme',
         antiBotEnabled: false,
         launchDelay: 60,
       });
@@ -261,9 +261,9 @@ const handleSubmit = async (e: React.FormEvent) => {
               <div className="grid md:grid-cols-2 gap-4">
                 {/* Free Tier */}
                 <div
-                  onClick={() => setFormData({...formData, tier: 'free', antiBotEnabled: false})}
+                  onClick={() => setFormData({...formData, tier: 'Free', antiBotEnabled: false})}
                   className={`cursor-pointer p-6 rounded-xl border-2 transition ${
-                    formData.tier === 'free'
+                    formData.tier === 'Free'
                       ? 'border-yellow-400 bg-yellow-400/10'
                       : 'border-gray-700 hover:border-gray-600'
                   }`}
@@ -283,9 +283,9 @@ const handleSubmit = async (e: React.FormEvent) => {
 
                 {/* Premium Tier */}
                 <div
-                  onClick={() => setFormData({...formData, tier: 'premium'})}
+                  onClick={() => setFormData({...formData, tier: 'Premium'})}
                   className={`cursor-pointer p-6 rounded-xl border-2 transition ${
-                    formData.tier === 'premium'
+                    formData.tier === 'Premium'
                       ? 'border-yellow-400 bg-yellow-400/10'
                       : 'border-gray-700 hover:border-gray-600'
                   }`}
@@ -306,7 +306,7 @@ const handleSubmit = async (e: React.FormEvent) => {
             </div>
 
             {/* Anti-Bot Toggle (Premium Only) */}
-            {formData.tier === 'premium' && (
+            {formData.tier === 'Premium' && (
               <div className="mb-6 bg-black/50 p-6 rounded-xl border border-yellow-400/30">
                 <label className="flex items-center justify-between cursor-pointer">
                   <div>
@@ -351,7 +351,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               disabled={isCreating || !imageFile}
               className="w-full bg-yellow-400 hover:bg-yellow-500 disabled:bg-gray-600 text-black font-bold py-4 rounded-lg transition text-lg"
             >
-              {isCreating ? 'Creating...' : `Create Token (${formData.tier === 'free' ? '0.01 SOL' : '0.5 SOL'})`}
+              {isCreating ? 'Creating...' : `Create Token (${formData.tier === 'Free' ? '0.01 SOL' : '0.5 SOL'})`}
             </button>
 
             {!imageFile && (
