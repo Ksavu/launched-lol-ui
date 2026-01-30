@@ -8,11 +8,9 @@ import {
   Keypair
 } from '@solana/web3.js';
 
-// --- Import IDL ---
-import * as TokenFactoryJson from './idl/token_factory.json';
-
-// --- Unwrap default if present ---
-const TokenFactoryIDL = (TokenFactoryJson as any).default ?? (TokenFactoryJson as any);
+// ✅ Anchor-friendly JSON import
+import TokenFactoryJsonRaw from './idl/token_factory.json';
+const TokenFactoryIDL = (TokenFactoryJsonRaw as any)?.default ?? TokenFactoryJsonRaw;
 
 // --- Program ID ---
 export const TOKEN_FACTORY_PROGRAM_ID = new PublicKey(
@@ -26,7 +24,6 @@ export const getProvider = (connection: Connection, wallet: WalletContextState) 
 
 // --- Program Instance ---
 export const getTokenFactoryProgram = (provider: AnchorProvider) => {
-  // ⚠ Important: cast to 'any' but also pass unwrapped IDL
   return new Program(TokenFactoryIDL as any, TOKEN_FACTORY_PROGRAM_ID, provider);
 };
 
