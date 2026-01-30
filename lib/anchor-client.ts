@@ -1,33 +1,36 @@
-import { Program, AnchorProvider, web3, BN } from '@coral-xyz/anchor';
+import { Program, AnchorProvider, BN } from '@coral-xyz/anchor';
 import { WalletContextState } from '@solana/wallet-adapter-react';
-import { Connection, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, Keypair } from '@solana/web3.js';
-import TokenFactoryIDL from './idl/token_factory.json';
-import BondingCurveIDL from './idl/bonding_curve.json';
+import {
+  Connection,
+  PublicKey,
+  SystemProgram,
+  SYSVAR_RENT_PUBKEY,
+  Keypair
+} from '@solana/web3.js';
 
+// --- Import IDL ---
+import * as TokenFactoryJson from './idl/token_factory.json';
+
+// --- Unwrap default if present ---
+const TokenFactoryIDL = (TokenFactoryJson as any).default ?? (TokenFactoryJson as any);
+
+// --- Program ID ---
 export const TOKEN_FACTORY_PROGRAM_ID = new PublicKey(
-  process.env.NEXT_PUBLIC_TOKEN_FACTORY_PROGRAM!
+  '7F4JYKAEs7VhVd9P8E1wHhd8aiwtKYeo1tTxabDqpCvX'
 );
 
-export const BONDING_CURVE_PROGRAM_ID = new PublicKey(
-  process.env.NEXT_PUBLIC_BONDING_CURVE_PROGRAM!
-);
-
+// --- Provider ---
 export const getProvider = (connection: Connection, wallet: WalletContextState) => {
-  return new AnchorProvider(
-    connection,
-    wallet as any,
-    { commitment: 'confirmed' }
-  );
+  return new AnchorProvider(connection, wallet as any, { commitment: 'confirmed' });
 };
 
+// --- Program Instance ---
 export const getTokenFactoryProgram = (provider: AnchorProvider) => {
+  // ⚠ Important: cast to 'any' but also pass unwrapped IDL
   return new Program(TokenFactoryIDL as any, TOKEN_FACTORY_PROGRAM_ID, provider);
 };
 
-export const getBondingCurveProgram = (provider: AnchorProvider) => {
-  return new Program(BondingCurveIDL as any, BONDING_CURVE_PROGRAM_ID, provider);
-};
-
+// --- PDAs ---
 export const getGlobalStatePDA = () => {
   return PublicKey.findProgramAddressSync(
     [Buffer.from('global-state')],
@@ -43,86 +46,74 @@ export const getTokenMetadataPDA = (mint: PublicKey) => {
 };
 
 export const getBondingCurvePDA = (mint: PublicKey) => {
+  const BONDING_CURVE_PROGRAM_ID = new PublicKey(
+    'FqjbzRkHvZ6kAQkXHR4aZ5EECrtXeMkJF46Di55na6Hq'
+  );
   return PublicKey.findProgramAddressSync(
     [Buffer.from('bonding-curve'), mint.toBuffer()],
     BONDING_CURVE_PROGRAM_ID
   );
 };
 
+// --- Create Token ---
 export interface CreateTokenParams {
   name: string;
   symbol: string;
   uri: string;
-  tier: 'free' | 'premium';
-  category: 'meme' | 'ai' | 'gaming' | 'defi' | 'nft' | 'other';
+  tier: 'Free' | 'Premium';       // Match JSON enum exactly!
+  category: 'Meme' | 'AI' | 'Gaming' | 'DeFi' | 'NFT' | 'Other';
   launchDelay: number;
   antiBotEnabled: boolean;
-  treasuryWallet: PublicKey;
 }
 
 export const createToken = async (
   provider: AnchorProvider,
   params: CreateTokenParams
 ) => {
-  const tokenFactoryProgram = getTokenFactoryProgram(provider);
-  
-  // Generate new mint keypair
+  const program = getTokenFactoryProgram(provider);
   const mintKeypair = Keypair.generate();
-  
-  // Get PDAs
+
   const [globalState] = getGlobalStatePDA();
   const [tokenMetadata] = getTokenMetadataPDA(mintKeypair.publicKey);
   const [bondingCurve] = getBondingCurvePDA(mintKeypair.publicKey);
-  
-  // Convert tier to enum format
-  const tierEnum = params.tier === 'free' ? { free: {} } : { premium: {} };
-  
-  // Convert category to enum format
-  const categoryEnum = { [params.category]: {} };
-  
-  console.log('Creating token with params:', {
-    mint: mintKeypair.publicKey.toBase58(),
-    globalState: globalState.toBase58(),
-    tokenMetadata: tokenMetadata.toBase58(),
-    bondingCurve: bondingCurve.toBase58(),
-    tier: tierEnum,
-    category: categoryEnum,
-  });
-  
+
+  // Borsh enum format: discriminator + empty object
+  const tierEnum = params.tier === 'Free' ? { Free: {} } : { Premium: {} };
+
+  const categoryEnum: any = { [params.category]: {} };
+
   try {
-    const tx = await tokenFactoryProgram.methods
-      .createToken(
-        params.name,
-        params.symbol,
-        params.uri,
-        tierEnum,
-        categoryEnum,
-        new BN(params.launchDelay),
-        params.antiBotEnabled
-      )
-      .accounts({
-        globalState,
-        tokenMetadata,
-        mint: mintKeypair.publicKey,
-        bondingCurve,
-        creator: provider.wallet.publicKey,
-        systemProgram: SystemProgram.programId,
-        rent: SYSVAR_RENT_PUBKEY,
-      })
-      .signers([mintKeypair])
-      .rpc();
-    
-    console.log('Token created! TX:', tx);
-    
+    const tx = await (program.methods as any).create_token(
+      params.name,
+      params.symbol,
+      params.uri,
+      tierEnum,
+      categoryEnum,
+      new BN(params.launchDelay),
+      params.antiBotEnabled
+    )
+    .accounts({
+      globalState,
+      tokenMetadata,
+      mint: mintKeypair.publicKey,
+      bondingCurve,
+      creator: provider.wallet.publicKey,
+      systemProgram: SystemProgram.programId,
+      rent: SYSVAR_RENT_PUBKEY,
+    })
+    .signers([mintKeypair])
+    .rpc();
+
+    console.log('✅ Token created!', tx);
+
     return {
       success: true,
       signature: tx,
       mint: mintKeypair.publicKey.toBase58(),
       bondingCurve: bondingCurve.toBase58(),
     };
-    
-  } catch (error: any) {
-    console.error('Token creation error:', error);
-    throw new Error(error.message || 'Failed to create token');
+  } catch (err: any) {
+    console.error('❌ Failed to create token:', err);
+    throw err;
   }
 };
