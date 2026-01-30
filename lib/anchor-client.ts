@@ -61,6 +61,7 @@ export interface CreateTokenParams {
   category: 'Meme' | 'AI' | 'Gaming' | 'DeFi' | 'NFT' | 'Other';
   launchDelay: number;
   antiBotEnabled: boolean;
+  treasuryWallet: PublicKey;
 }
 
 export const createToken = async (
@@ -99,6 +100,7 @@ export const createToken = async (
       mint: mintKeypair.publicKey,
       bondingCurve,
       creator: provider.wallet.publicKey,
+      treasuryWallet: params.treasuryWallet,
       systemProgram: SystemProgram.programId,
       rent: SYSVAR_RENT_PUBKEY,
     })

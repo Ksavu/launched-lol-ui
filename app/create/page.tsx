@@ -15,7 +15,7 @@ export default function CreateToken() {
     symbol: '',
     description: '',
     tier: 'free' as 'Free' | 'Premium',
-    category: 'meme' as 'Meme' | 'Ai' | 'Gaming' | 'DeFi' | 'Nft' | 'Other',
+    category: 'meme' as 'Meme' | 'AI' | 'Gaming' | 'DeFi' | 'NFT' | 'Other',
     antiBotEnabled: false,
     launchDelay: 60,
   });
