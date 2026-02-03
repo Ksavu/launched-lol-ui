@@ -39,7 +39,7 @@ export default function CreateToken() {
 const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!connected || !publicKey) {
+    if (!connected || !publicKey || !signTransaction || !signAllTransactions) {
       alert('Please connect your wallet first!');
       return;
     }
@@ -92,28 +92,33 @@ const handleSubmit = async (e: React.FormEvent) => {
       // Step 3: Create token on blockchain
       console.log('⛓️ Creating token on Solana...');
       
-      // Dynamic import to avoid SSR issues
-      const { getProvider, createToken } = await import('../../lib/anchor-client');
+      // Use manual token creation
+      const { createTokenManual } = await import('../../lib/token-creation');
       
-      const provider = getProvider(connection, { publicKey, signTransaction, signAllTransactions } as any);
+      // Create wallet adapter object
+      const wallet = {
+        publicKey,
+        signTransaction,
+        signAllTransactions,
+      };
       
-      // Treasury wallet (you can change this to your own wallet)
-      const treasuryWallet = new PublicKey('GtcpcvS3k24MA3Yhs6bAd1spkdjYmx82KqRxSk6pPWhE'); // Replace with your treasury
-      
-      const result = await createToken(provider, {
-        name: formData.name,
-        symbol: formData.symbol,
-        uri: metadataUrl,
-        tier: formData.tier,
-        category: formData.category,
-        launchDelay: formData.launchDelay,
-        antiBotEnabled: formData.antiBotEnabled,
-        treasuryWallet,
-      });
+      const result = await createTokenManual(
+        connection,
+        wallet,
+        {
+          name: formData.name,
+          symbol: formData.symbol,
+          uri: metadataUrl,
+          tier: formData.tier.toLowerCase() as 'free' | 'premium',
+          category: formData.category.toLowerCase() as 'meme' | 'ai' | 'gaming' | 'defi' | 'nft' | 'other',
+          launchDelay: formData.launchDelay,
+          antiBotEnabled: formData.antiBotEnabled,
+        }
+      );
       
       console.log('✅ Token created on-chain!', result);
       
-      alert(`🎉 SUCCESS!\n\nToken: ${result.mint}\nTX: ${result.signature}\n\nView on Solana Explorer!`);
+      alert(`🎉 SUCCESS!\n\nToken: ${result.mint}\nTX: ${result.signature}\n\nView on Solscan: https://solscan.io/tx/${result.signature}?cluster=devnet`);
       
       // Reset form
       setFormData({
