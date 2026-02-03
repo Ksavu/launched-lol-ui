@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       throw new Error('Failed to upload to Pinata');
     }
 
-    const imageUrl = `https://gateway.pinata.cloud/ipfs/${pinataData.IpfsHash}`;
+    const imageUrl = `https://tan-worthy-zebra-831.mypinata.cloud/ipfs/${pinataData.IpfsHash}`;
     
     return NextResponse.json({ 
       success: true, 

@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       throw new Error('Failed to upload metadata');
     }
 
-    const metadataUrl = `https://gateway.pinata.cloud/ipfs/${pinataData.IpfsHash}`;
+    const metadataUrl = `https://tan-worthy-zebra-831.mypinata.cloud/ipfs/${pinataData.IpfsHash}`;
     
     return NextResponse.json({ 
       success: true, 
