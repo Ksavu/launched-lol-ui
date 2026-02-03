@@ -23,6 +23,7 @@ interface TokenData {
   isActive: boolean;
 }
 
+export const dynamic = 'force-dynamic';
 export default function TokenDetailPage({ params }: { params: Promise<{ mint: string }> }) {
   // Unwrap params Promise
   const unwrappedParams = use(params);
