@@ -1,8 +1,9 @@
 import { Connection, PublicKey, Transaction, TransactionInstruction, Keypair, SystemProgram, SYSVAR_RENT_PUBKEY } from '@solana/web3.js';
-import { serialize } from 'borsh';
-import { BN } from '@coral-xyz/anchor';
+import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress } from '@solana/spl-token';
+import BN from 'bn.js';
 
 const TOKEN_FACTORY_PROGRAM_ID = new PublicKey('7F4JYKAEs7VhVd9P8E1wHhd8aiwtKYeo1tTxabDqpCvX');
+const BONDING_CURVE_PROGRAM_ID = new PublicKey('FqjbzRkHvZ6kAQkXHR4aZ5EECrtXeMkJF46Di55na6Hq');
 
 // Instruction discriminator from IDL
 const CREATE_TOKEN_DISCRIMINATOR = Buffer.from([84, 52, 204, 228, 24, 140, 234, 75]);
@@ -81,7 +82,7 @@ export async function createTokenManual(
   data.writeUInt8(categoryNum, offset);
   offset += 1;
   
-  // Write launchDelay (i64) - write as two 32-bit values
+  // Write launchDelay (i64)
   const launchDelayLow = params.launchDelay & 0xFFFFFFFF;
   const launchDelayHigh = Math.floor(params.launchDelay / 0x100000000);
   data.writeUInt32LE(launchDelayLow, offset);
@@ -92,7 +93,6 @@ export async function createTokenManual(
   data.writeUInt8(params.antiBotEnabled ? 1 : 0, offset);
 
   console.log('📝 Instruction data:', data.toString('hex'));
-  console.log('📝 Data size:', data.length);
 
   // Generate mint keypair
   const mintKeypair = Keypair.generate();
@@ -109,25 +109,37 @@ export async function createTokenManual(
     TOKEN_FACTORY_PROGRAM_ID
   );
 
-  const BONDING_CURVE_PROGRAM_ID = new PublicKey('FqjbzRkHvZ6kAQkXHR4aZ5EECrtXeMkJF46Di55na6Hq');
   const [bondingCurve] = PublicKey.findProgramAddressSync(
     [Buffer.from('bonding-curve'), mintKeypair.publicKey.toBuffer()],
     BONDING_CURVE_PROGRAM_ID
   );
 
+  // Get associated token account for bonding curve
+  const bondingCurveTokenAccount = await getAssociatedTokenAddress(
+    mintKeypair.publicKey,
+    bondingCurve,
+    true // allowOwnerOffCurve
+  );
+
   console.log('📍 PDAs:');
   console.log('  Global State:', globalState.toBase58());
   console.log('  Token Metadata:', tokenMetadata.toBase58());
+  console.log('  Mint:', mintKeypair.publicKey.toBase58());
   console.log('  Bonding Curve:', bondingCurve.toBase58());
+  console.log('  BC Token Account:', bondingCurveTokenAccount.toBase58());
 
-  // Create instruction
+  // Create instruction with all required accounts
   const instruction = new TransactionInstruction({
     keys: [
       { pubkey: globalState, isSigner: false, isWritable: true },
       { pubkey: tokenMetadata, isSigner: false, isWritable: true },
       { pubkey: mintKeypair.publicKey, isSigner: true, isWritable: true },
       { pubkey: bondingCurve, isSigner: false, isWritable: false },
+      { pubkey: bondingCurveTokenAccount, isSigner: false, isWritable: true },
       { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+      { pubkey: BONDING_CURVE_PROGRAM_ID, isSigner: false, isWritable: false },
+      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+      { pubkey: ASSOCIATED_TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
       { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
     ],
@@ -161,6 +173,7 @@ export async function createTokenManual(
   await connection.confirmTransaction(txid, 'confirmed');
 
   console.log('✅ Transaction confirmed!');
+  console.log('🪙 Real SPL tokens minted!');
 
   return {
     signature: txid,

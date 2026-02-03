@@ -18,6 +18,7 @@ export default function CreateToken() {
     category: 'meme' as 'Meme' | 'AI' | 'Gaming' | 'DeFi' | 'NFT' | 'Other',
     antiBotEnabled: false,
     launchDelay: 60,
+    devBuyAmount: 0,
   });
   
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -39,7 +40,7 @@ export default function CreateToken() {
 const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!connected || !publicKey || !signTransaction || !signAllTransactions) {
+    if (!connected || !publicKey) {
       alert('Please connect your wallet first!');
       return;
     }
@@ -92,17 +93,15 @@ const handleSubmit = async (e: React.FormEvent) => {
       // Step 3: Create token on blockchain
       console.log('⛓️ Creating token on Solana...');
       
-      // Use manual token creation
       const { createTokenManual } = await import('../../lib/token-creation');
       
-      // Create wallet adapter object
       const wallet = {
         publicKey,
         signTransaction,
         signAllTransactions,
       };
       
-      const result = await createTokenManual(
+      const tokenResult = await createTokenManual(
         connection,
         wallet,
         {
@@ -116,10 +115,48 @@ const handleSubmit = async (e: React.FormEvent) => {
         }
       );
       
-      console.log('✅ Token created on-chain!', result);
+      console.log('✅ Token created on-chain!', tokenResult);
       
-      alert(`🎉 SUCCESS!\n\nToken: ${result.mint}\nTX: ${result.signature}\n\nView on Solscan: https://solscan.io/tx/${result.signature}?cluster=devnet`);
-      
+      // Step 4: Initialize bonding curve
+console.log('🔄 Initializing bonding curve...');
+
+const { initializeBondingCurve } = await import('../../lib/bonding-curve-client');
+
+const treasuryWallet = 'GtcpcvS3k24MA3Yhs6bAd1spkdjYmx82KqRxSk6pPWhE';
+
+const bondingCurveTx = await initializeBondingCurve(
+  connection,
+  wallet,
+  tokenResult.mint,
+  treasuryWallet
+);
+
+console.log('✅ Bonding curve initialized!', bondingCurveTx);
+
+// Step 5: Optional dev buy
+let buyTx = null;
+if (formData.devBuyAmount > 0) {
+  console.log('💰 Buying initial supply:', formData.devBuyAmount, 'SOL');
+  
+  const { buyTokens } = await import('../../lib/bonding-curve-client');
+  
+  buyTx = await buyTokens(
+    connection,
+    wallet,
+    tokenResult.mint,
+    formData.devBuyAmount
+  );
+  
+  console.log('✅ Dev bought tokens!', buyTx);
+}
+
+// Success message
+const message = buyTx 
+  ? `🎉 SUCCESS!\n\nToken: ${tokenResult.mint}\n\nToken Creation: https://solscan.io/tx/${tokenResult.signature}?cluster=devnet\n\nBonding Curve: https://solscan.io/tx/${bondingCurveTx}?cluster=devnet\n\nDev Buy: https://solscan.io/tx/${buyTx}?cluster=devnet\n\nYour token is now tradeable!`
+  : `🎉 SUCCESS!\n\nToken: ${tokenResult.mint}\n\nToken Creation: https://solscan.io/tx/${tokenResult.signature}?cluster=devnet\n\nBonding Curve: https://solscan.io/tx/${bondingCurveTx}?cluster=devnet\n\nYour token is now tradeable!`;
+
+alert(message);
+
       // Reset form
       setFormData({
         name: '',
@@ -129,6 +166,7 @@ const handleSubmit = async (e: React.FormEvent) => {
         category: 'Meme',
         antiBotEnabled: false,
         launchDelay: 60,
+        devBuyAmount: 0,
       });
       setImageFile(null);
       setImagePreview('');
@@ -140,7 +178,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       setIsCreating(false);
     }
   };
-
+  
   return (
     <div className="min-h-screen bg-black">
       <Header />
@@ -350,14 +388,54 @@ const handleSubmit = async (e: React.FormEvent) => {
               </div>
             </div>
 
+            {/* Dev Buy Option */}
+<div className="mb-8 bg-black/50 p-6 rounded-xl border border-yellow-400/30">
+  <h3 className="text-white font-semibold mb-2">🎯 Optional: Buy Initial Supply</h3>
+  <p className="text-sm text-gray-400 mb-4">
+    Buy tokens immediately after creation. Shows commitment and starts your position.
+  </p>
+  
+  <label className="block text-white font-semibold mb-2">
+    Buy Amount (SOL)
+  </label>
+  <input
+    type="number"
+    step="0.1"
+    min="0"
+    max="5"
+    value={formData.devBuyAmount}
+    onChange={(e) => setFormData({...formData, devBuyAmount: parseFloat(e.target.value) || 0})}
+    className="w-full bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-4 py-3 text-white outline-none"
+    placeholder="0 (no buy) or 0.1-5.0 SOL"
+  />
+  
+  {formData.devBuyAmount > 0 && (
+    <div className="mt-3 p-3 bg-yellow-400/10 rounded-lg">
+      <p className="text-sm text-yellow-400">
+        📊 You'll receive approximately {(formData.devBuyAmount * 0.99 * 1000000 / 30).toFixed(1)}M tokens (~{((formData.devBuyAmount * 0.99 * 1000000 / 30) / 10000000).toFixed(1)}%)
+      </p>
+      <p className="text-xs text-gray-400 mt-1">
+        Total cost: {(parseFloat(formData.tier === 'Free' ? '0.01' : '0.5') + formData.devBuyAmount).toFixed(2)} SOL
+      </p>
+    </div>
+  )}
+  
+  <p className="text-xs text-gray-500 mt-3">
+    💡 Tip: 0.5-1 SOL buy shows strong commitment to your token
+  </p>
+</div>
+
             {/* Submit Button */}
             <button
-              type="submit"
-              disabled={isCreating || !imageFile}
-              className="w-full bg-yellow-400 hover:bg-yellow-500 disabled:bg-gray-600 text-black font-bold py-4 rounded-lg transition text-lg"
-            >
-              {isCreating ? 'Creating...' : `Create Token (${formData.tier === 'Free' ? '0.01 SOL' : '0.5 SOL'})`}
-            </button>
+  type="submit"
+  disabled={isCreating || !imageFile}
+  className="w-full bg-yellow-400 hover:bg-yellow-500 disabled:bg-gray-600 text-black font-bold py-4 rounded-lg transition text-lg"
+>
+  {isCreating 
+    ? 'Creating...' 
+    : `Create Token (${(parseFloat(formData.tier === 'Free' ? '0.01' : '0.5') + formData.devBuyAmount).toFixed(2)} SOL)`
+  }
+</button>
 
             {!imageFile && (
               <p className="text-center text-red-400 text-sm mt-2">
