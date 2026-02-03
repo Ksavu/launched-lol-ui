@@ -1,6 +1,6 @@
 import { Connection, PublicKey, Transaction, TransactionInstruction, Keypair, SystemProgram, SYSVAR_RENT_PUBKEY } from '@solana/web3.js';
 import { serialize } from 'borsh';
-import BN from 'bn.js';
+import { BN } from '@coral-xyz/anchor';
 
 const TOKEN_FACTORY_PROGRAM_ID = new PublicKey('7F4JYKAEs7VhVd9P8E1wHhd8aiwtKYeo1tTxabDqpCvX');
 
