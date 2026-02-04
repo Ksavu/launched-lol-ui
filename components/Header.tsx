@@ -39,7 +39,7 @@ export const Header = () => {
             <Link href="/create" className="text-gray-300 hover:text-yellow-400 transition">
               Create Token
             </Link>
-            <Link href="/tokens" className="text-gray-300 hover:text-yellow-400 transition">
+            <Link href="/explore" className="text-gray-300 hover:text-yellow-400 transition">
               Explore
             </Link>
           </nav>

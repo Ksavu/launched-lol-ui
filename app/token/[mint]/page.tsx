@@ -1,89 +1,106 @@
 'use client';
 
-import { use, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import { Header } from '../../../components/Header';
-import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { PublicKey } from '@solana/web3.js';
 import Image from 'next/image';
-import Link from 'next/link';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { buyTokens, sellTokens } from '../../../lib/bonding-curve-client';
 
 interface TokenData {
-  mint: string;
+  address: string;
   name: string;
   symbol: string;
   imageUrl: string;
   description: string;
-  tier: string;
-  category: string;
   creator: string;
-  launchTime: number;
-  tokensSold: number;
+  bondingCurve: string;
   solCollected: number;
+  tokensSold: number;
+  progress: number;
   isActive: boolean;
+  marketCap: number;
 }
 
-export default function TokenDetailPage({ params }: { params: Promise<{ mint: string }> }) {
-  // Unwrap params Promise
-  const unwrappedParams = use(params);
-  const mint = unwrappedParams.mint;
-  
+export default function TokenPage() {
+  const params = useParams();
+  const mint = params.mint as string;
+  const { publicKey, connected, signTransaction, signAllTransactions } = useWallet();
   const { connection } = useConnection();
-  const { publicKey, connected } = useWallet();
+  
   const [token, setToken] = useState<TokenData | null>(null);
   const [loading, setLoading] = useState(true);
   const [buyAmount, setBuyAmount] = useState('0.1');
-  const [isBuying, setIsBuying] = useState(false);
+  const [sellAmount, setSellAmount] = useState('');
+  const [trading, setTrading] = useState(false);
 
   useEffect(() => {
-    loadToken();
+    fetchTokenData();
   }, [mint]);
 
-  const loadToken = async () => {
+  const fetchTokenData = async () => {
     try {
-      setLoading(true);
-      
-      // TODO: Fetch real token data from on-chain
-      // Mock data for now
-      const mockToken: TokenData = {
-        mint: mint,
-        name: 'Test Token',
-        symbol: 'TEST',
-        imageUrl: 'https://gateway.pinata.cloud/ipfs/QmUxobLxr8dD3RbLhuvwFw8vuxBcfiigx1f2kxrik3YSYg',
-        description: 'A test token created on Launched.lol',
-        tier: 'Premium',
-        category: 'Meme',
-        creator: 'GtcpcvS3k24MA3Yhs6bAd1spkdjYmx82KqRxSk6pPWhE',
-        launchTime: Date.now() - 3600000,
-        tokensSold: 50000000,
-        solCollected: 0.5,
-        isActive: true,
-      };
-      
-      setToken(mockToken);
+      const response = await fetch('/api/tokens');
+      const data = await response.json();
+      const foundToken = data.tokens.find((t: TokenData) => t.address === mint);
+      setToken(foundToken || null);
     } catch (error) {
-      console.error('Error loading token:', error);
+      console.error('Error fetching token:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleBuy = async () => {
-    if (!connected || !publicKey) {
-      alert('Please connect your wallet!');
+    if (!connected || !publicKey || !token) {
+      alert('Please connect wallet!');
       return;
     }
 
-    setIsBuying(true);
+    setTrading(true);
     try {
-      // TODO: Implement buy logic
-      console.log('Buying', buyAmount, 'SOL worth of tokens');
-      alert('Buy functionality coming soon!');
+      const wallet = { publicKey, signTransaction, signAllTransactions };
+      const tx = await buyTokens(
+        connection,
+        wallet,
+        token.address,
+        parseFloat(buyAmount)
+      );
+      
+      alert(`✅ Success!\n\nBought tokens!\n\nTX: https://solscan.io/tx/${tx}?cluster=devnet`);
+      await fetchTokenData();
     } catch (error) {
-      console.error('Buy error:', error);
-      alert('Error buying tokens');
+      console.error(error);
+      alert(`Error: ${error}`);
     } finally {
-      setIsBuying(false);
+      setTrading(false);
+    }
+  };
+
+  const handleSell = async () => {
+    if (!connected || !publicKey || !token) {
+      alert('Please connect wallet!');
+      return;
+    }
+
+    setTrading(true);
+    try {
+      const wallet = { publicKey, signTransaction, signAllTransactions };
+      const tx = await sellTokens(
+        connection,
+        wallet,
+        token.address,
+        parseFloat(sellAmount)
+      );
+      
+      alert(`✅ Success!\n\nSold tokens!\n\nTX: https://solscan.io/tx/${tx}?cluster=devnet`);
+      await fetchTokenData();
+    } catch (error) {
+      console.error(error);
+      alert(`Error: ${error}`);
+    } finally {
+      setTrading(false);
     }
   };
 
@@ -91,8 +108,8 @@ export default function TokenDetailPage({ params }: { params: Promise<{ mint: st
     return (
       <div className="min-h-screen bg-black">
         <Header />
-        <div className="flex items-center justify-center h-96">
-          <div className="inline-block w-8 h-8 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-white text-xl">Loading token...</div>
         </div>
       </div>
     );
@@ -102,160 +119,191 @@ export default function TokenDetailPage({ params }: { params: Promise<{ mint: st
     return (
       <div className="min-h-screen bg-black">
         <Header />
-        <div className="max-w-4xl mx-auto px-4 py-20 text-center">
-          <h1 className="text-3xl font-bold text-white mb-4">Token Not Found</h1>
-          <Link href="/tokens" className="text-yellow-400 hover:text-yellow-500">
-            ← Back to Tokens
-          </Link>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-white text-xl">Token not found</div>
         </div>
       </div>
     );
   }
 
-  const progress = (token.solCollected / 81) * 100;
-
   return (
     <div className="min-h-screen bg-black">
       <Header />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Back Button */}
-        <Link 
-          href="/tokens"
-          className="inline-flex items-center text-gray-400 hover:text-white mb-6 transition"
-        >
-          <ArrowLeftIcon className="w-5 h-5 mr-2" />
-          Back to Tokens
-        </Link>
-
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Left Column - Token Info */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Left: Token Info */}
           <div>
             {/* Token Image */}
-            <div className="relative w-full aspect-square rounded-2xl overflow-hidden border-2 border-gray-800 mb-6">
-              <Image
-                src={token.imageUrl}
-                alt={token.name}
-                fill
-                className="object-cover"
-              />
+            <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-gray-900 mb-6">
+              {token.imageUrl ? (
+                <Image
+                  src={token.imageUrl}
+                  alt={token.name}
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-6xl">
+                  🪙
+                </div>
+              )}
             </div>
 
             {/* Token Details */}
             <div className="bg-gray-900 rounded-xl p-6 border-2 border-gray-800">
               <h1 className="text-3xl font-bold text-white mb-2">{token.name}</h1>
-              <p className="text-xl text-gray-400 mb-4">${token.symbol}</p>
+              <p className="text-gray-400 text-lg mb-4">${token.symbol}</p>
               
-              <p className="text-gray-300 mb-6">{token.description}</p>
+              {token.description && (
+                <p className="text-gray-300 mb-6">{token.description}</p>
+              )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Category</p>
-                  <p className="text-white font-semibold">{token.category}</p>
+              {/* Stats */}
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Market Cap</span>
+                  <span className="text-white font-semibold">${token.marketCap.toFixed(2)}</span>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Tier</p>
-                  <p className="text-white font-semibold">{token.tier}</p>
+                
+                <div className="flex justify-between">
+                  <span className="text-gray-400">SOL Collected</span>
+                  <span className="text-white font-semibold">{token.solCollected.toFixed(3)} SOL</span>
                 </div>
-                <div className="col-span-2">
-                  <p className="text-sm text-gray-500 mb-1">Creator</p>
-                  <p className="text-white font-mono text-sm truncate">{token.creator}</p>
+                
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Tokens Sold</span>
+                  <span className="text-white font-semibold">
+                    {token.tokensSold >= 1000000 
+                      ? `${(token.tokensSold / 1000000).toFixed(2)}M`
+                      : `${(token.tokensSold / 1000).toFixed(1)}K`
+                    }
+                  </span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Status</span>
+                  <span className={`font-semibold ${token.isActive ? 'text-green-400' : 'text-yellow-400'}`}>
+                    {token.isActive ? '🟢 Active' : '🎓 Graduated'}
+                  </span>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Right Column - Trading */}
-          <div>
-            {/* Progress to Graduation */}
-            <div className="bg-gray-900 rounded-xl p-6 border-2 border-gray-800 mb-6">
-              <h2 className="text-xl font-bold text-white mb-4">Bonding Curve Progress</h2>
-              
-              <div className="mb-4">
+              {/* Progress Bar */}
+              <div className="mt-6">
                 <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-400">Progress to Raydium</span>
-                  <span className="text-white font-semibold">{progress.toFixed(1)}%</span>
+                  <span className="text-gray-400">Progress to 81 SOL</span>
+                  <span className="text-white font-semibold">{token.progress.toFixed(2)}%</span>
                 </div>
-                <div className="w-full bg-gray-800 rounded-full h-3 overflow-hidden">
-                  <div 
-                    className="bg-gradient-to-r from-yellow-400 to-yellow-600 h-full transition-all"
-                    style={{ width: `${progress}%` }}
+                <div className="w-full bg-gray-800 rounded-full h-3">
+                  <div
+                    className="bg-yellow-400 h-3 rounded-full transition-all"
+                    style={{ width: `${Math.min(token.progress, 100)}%` }}
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">Tokens Sold</p>
-                  <p className="text-white font-semibold">{(token.tokensSold / 1e6).toFixed(1)}M</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500 mb-1">SOL Collected</p>
-                  <p className="text-white font-semibold">{token.solCollected.toFixed(2)} SOL</p>
-                </div>
+              {/* Contract Address */}
+              <div className="mt-6 pt-6 border-t border-gray-800">
+                <p className="text-gray-400 text-sm mb-2">Contract Address</p>
+                
+                  href={`https://solscan.io/token/${token.address}?cluster=devnet`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-yellow-400 hover:text-yellow-300 text-sm break-all"
+                <a>
+                  {token.address}
+                </a>
               </div>
             </div>
+          </div>
 
-            {/* Buy Interface */}
-            <div className="bg-gray-900 rounded-xl p-6 border-2 border-gray-800">
-              <h2 className="text-xl font-bold text-white mb-4">Buy Tokens</h2>
+          {/* Right: Trading */}
+          <div>
+            <div className="bg-gray-900 rounded-xl p-6 border-2 border-yellow-400/20 mb-6">
+              <h2 className="text-2xl font-bold text-white mb-6">Trade</h2>
 
-              {!connected ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-400 mb-4">Connect your wallet to trade</p>
+              {!token.isActive && (
+                <div className="bg-yellow-400/10 border border-yellow-400/30 rounded-lg p-4 mb-6">
+                  <p className="text-yellow-400 text-sm">
+                    🎓 This token has graduated and is now trading on Raydium!
+                  </p>
                 </div>
-              ) : (
-                <div>
-                  <div className="mb-4">
-                    <label className="block text-sm text-gray-400 mb-2">
-                      Amount (SOL)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      value={buyAmount}
-                      onChange={(e) => setBuyAmount(e.target.value)}
-                      className="w-full bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-4 py-3 text-white outline-none"
-                      placeholder="0.1"
-                    />
-                  </div>
+              )}
 
+              {/* Buy Section */}
+              <div className="mb-8">
+                <label className="block text-white font-semibold mb-2">
+                  Buy Tokens
+                </label>
+                <div className="flex gap-3">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0.01"
+                    value={buyAmount}
+                    onChange={(e) => setBuyAmount(e.target.value)}
+                    className="flex-1 bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-4 py-3 text-white outline-none"
+                    placeholder="SOL amount"
+                  />
                   <button
                     onClick={handleBuy}
-                    disabled={isBuying || !token.isActive}
-                    className="w-full bg-yellow-400 hover:bg-yellow-500 disabled:bg-gray-600 text-black font-bold py-4 rounded-lg transition"
+                    disabled={trading || !connected || !token.isActive}
+                    className="bg-green-500 hover:bg-green-600 disabled:bg-gray-600 text-white font-bold px-8 py-3 rounded-lg transition"
                   >
-                    {isBuying ? 'Buying...' : 'Buy Tokens'}
+                    {trading ? 'Buying...' : 'Buy'}
                   </button>
+                </div>
+                <p className="text-gray-400 text-sm mt-2">
+                  You will receive ~{((parseFloat(buyAmount) * 0.99 / 81) * 800000000 / 1000000).toFixed(2)}M tokens
+                </p>
+              </div>
 
-                  <p className="text-xs text-gray-500 text-center mt-3">
-                    1% trading fee applies
+              {/* Sell Section */}
+              <div>
+                <label className="block text-white font-semibold mb-2">
+                  Sell Tokens
+                </label>
+                <div className="flex gap-3">
+                  <input
+                    type="number"
+                    step="100000"
+                    min="100000"
+                    max="100000000"
+                    value={sellAmount}
+                    onChange={(e) => setSellAmount(e.target.value)}
+                    className="flex-1 bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-4 py-3 text-white outline-none"
+                    placeholder="Token amount (e.g., 1000000)"
+                  />
+                  <button
+                    onClick={handleSell}
+                    disabled={trading || !connected || !token.isActive || !sellAmount}
+                    className="bg-red-500 hover:bg-red-600 disabled:bg-gray-600 text-white font-bold px-8 py-3 rounded-lg transition"
+                  >
+                    {trading ? 'Selling...' : 'Sell'}
+                  </button>
+                </div>
+                <p className="text-gray-400 text-sm mt-2">
+                  {sellAmount && parseFloat(sellAmount) > 0
+                    ? `You'll receive ~${((parseFloat(sellAmount) / 800000000) * 81 * 0.99).toFixed(4)} SOL`
+                    : 'Enter token amount (e.g., 1000000 = 1M tokens)'}
+                </p>
+              </div>
+
+              {!connected && (
+                <div className="mt-6 bg-yellow-400/10 border border-yellow-400/30 rounded-lg p-4">
+                  <p className="text-yellow-400 text-sm">
+                    Connect your wallet to trade
                   </p>
                 </div>
               )}
             </div>
 
-            {/* Stats */}
-            <div className="bg-gray-900 rounded-xl p-6 border-2 border-gray-800 mt-6">
-              <h3 className="text-lg font-bold text-white mb-4">Token Stats</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Market Cap</span>
-                  <span className="text-white font-semibold">
-                    ${(token.solCollected * 188).toFixed(0)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Holders</span>
-                  <span className="text-white font-semibold">--</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Status</span>
-                  <span className="text-green-400 font-semibold">
-                    {token.isActive ? 'Active' : 'Graduated'}
-                  </span>
-                </div>
+            {/* Chart Placeholder */}
+            <div className="bg-gray-900 rounded-xl p-6 border-2 border-gray-800">
+              <h3 className="text-xl font-bold text-white mb-4">Price Chart</h3>
+              <div className="bg-gray-800 rounded-lg p-8 text-center">
+                <p className="text-gray-400">📊 Chart coming soon!</p>
               </div>
             </div>
           </div>

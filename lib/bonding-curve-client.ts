@@ -119,3 +119,76 @@ export async function buyTokens(
   
   return txid;
 }
+
+export async function sellTokens(
+  connection: Connection,
+  wallet: any,
+  mintAddress: string,
+  tokenAmount: number // in whole tokens (not base units)
+) {
+  const mint = new PublicKey(mintAddress);
+  
+  const [bondingCurve] = PublicKey.findProgramAddressSync(
+    [Buffer.from('bonding-curve'), mint.toBuffer()],
+    BONDING_CURVE_PROGRAM_ID
+  );
+  
+  const bondingCurveAccount = await connection.getAccountInfo(bondingCurve);
+  if (!bondingCurveAccount) throw new Error('Bonding curve not found');
+  
+  const treasury = new PublicKey(bondingCurveAccount.data.slice(40, 72));
+  
+  console.log('💸 Selling', tokenAmount, 'tokens');
+  
+  // Validate token amount
+  if (tokenAmount <= 0 || !Number.isFinite(tokenAmount)) {
+    throw new Error('Invalid token amount');
+  }
+  
+  // Correct sell_tokens discriminator
+  const SELL_TOKENS_DISCRIMINATOR = Buffer.from([114, 242, 25, 12, 62, 126, 92, 2]);
+  
+  // Convert tokens to base units (6 decimals) - with safety check
+  const tokenAmountBaseUnits = Math.floor(tokenAmount * 1_000_000);
+  
+  // Check if number is too large for u64
+  if (tokenAmountBaseUnits > Number.MAX_SAFE_INTEGER) {
+    throw new Error('Token amount too large');
+  }
+  
+  // Serialize: discriminator + token_amount (u64)
+  const data = Buffer.alloc(16); // 8 for discriminator + 8 for u64
+  SELL_TOKENS_DISCRIMINATOR.copy(data, 0);
+  
+  // Write u64 safely
+  const tokenLow = tokenAmountBaseUnits & 0xFFFFFFFF;
+  const tokenHigh = Math.floor(tokenAmountBaseUnits / 0x100000000);
+  data.writeUInt32LE(tokenLow, 8);
+  data.writeUInt32LE(tokenHigh, 12);
+  
+  const instruction = new TransactionInstruction({
+    keys: [
+      { pubkey: bondingCurve, isSigner: false, isWritable: true },
+      { pubkey: treasury, isSigner: false, isWritable: true },
+      { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    ],
+    programId: BONDING_CURVE_PROGRAM_ID,
+    data,
+  });
+  
+  const transaction = new Transaction().add(instruction);
+  transaction.feePayer = wallet.publicKey;
+  
+  const { blockhash } = await connection.getLatestBlockhash();
+  transaction.recentBlockhash = blockhash;
+  
+  const signed = await wallet.signTransaction(transaction);
+  const txid = await connection.sendRawTransaction(signed.serialize());
+  await connection.confirmTransaction(txid, 'confirmed');
+  
+  console.log('✅ Tokens sold!');
+  console.log('📝 TX:', txid);
+  
+  return txid;
+}
