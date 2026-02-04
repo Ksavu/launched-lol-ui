@@ -64,7 +64,7 @@ export const Header = () => {
           <Link href="/create" className="text-sm text-gray-300 hover:text-yellow-400 transition">
             Create
           </Link>
-          <Link href="/tokens" className="text-sm text-gray-300 hover:text-yellow-400 transition">
+          <Link href="/explore" className="text-sm text-gray-300 hover:text-yellow-400 transition">
             Explore
           </Link>
         </nav>
