@@ -410,10 +410,23 @@ alert(message);
   />
   
   {formData.devBuyAmount > 0 && (
-    <div className="mt-3 p-3 bg-yellow-400/10 rounded-lg">
-      <p className="text-sm text-yellow-400">
-        📊 You'll receive approximately {(formData.devBuyAmount * 0.99 * 1000000 / 30).toFixed(1)}M tokens (~{((formData.devBuyAmount * 0.99 * 1000000 / 30) / 10000000).toFixed(1)}%)
-      </p>
+  <div className="mt-3 p-3 bg-yellow-400/10 rounded-lg">
+    {(() => {
+      const solAfterFee = formData.devBuyAmount * 0.99;
+      const availableSupply = 800000000; // 800M tokens
+      const graduationSol = 81; // 81 SOL
+      const tokensReceived = (solAfterFee / graduationSol) * availableSupply;
+      const percentOfSupply = (tokensReceived / 1000000000) * 100;
+      
+      return (
+        <p className="text-sm text-yellow-400">
+          📊 You'll receive approximately {tokensReceived >= 1000000 
+            ? `${(tokensReceived / 1000000).toFixed(2)}M` 
+            : `${(tokensReceived / 1000).toFixed(1)}K`} tokens (~{percentOfSupply.toFixed(2)}%)
+        </p>
+      );
+    })()}
+    
       <p className="text-xs text-gray-400 mt-1">
         Total cost: {(parseFloat(formData.tier === 'Free' ? '0.01' : '0.5') + formData.devBuyAmount).toFixed(2)} SOL
       </p>

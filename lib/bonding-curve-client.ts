@@ -5,7 +5,7 @@ const TOKEN_FACTORY_PROGRAM_ID = new PublicKey('7F4JYKAEs7VhVd9P8E1wHhd8aiwtKYeo
 
 // Correct discriminators from IDL
 const INITIALIZE_CURVE_DISCRIMINATOR = Buffer.from([170, 84, 186, 253, 131, 149, 95, 213]);
-const BUY_TOKENS_DISCRIMINATOR = Buffer.from([102, 6, 61, 18, 1, 218, 235, 234]);
+const BUY_TOKENS_DISCRIMINATOR = Buffer.from([189, 21, 230, 133, 247, 2, 110, 42]);
 
 export async function initializeBondingCurve(
   connection: Connection,
@@ -85,7 +85,12 @@ export async function buyTokens(
   BUY_TOKENS_DISCRIMINATOR.copy(data, 0);
   
   const lamports = Math.floor(solAmount * 1_000_000_000);
-  data.writeBigUInt64LE(BigInt(lamports), 8);
+  
+  // Write u64 as two u32 values (little endian)
+  const lamportsLow = lamports & 0xFFFFFFFF;
+  const lamportsHigh = Math.floor(lamports / 0x100000000);
+  data.writeUInt32LE(lamportsLow, 8);
+  data.writeUInt32LE(lamportsHigh, 12);
   
   const instruction = new TransactionInstruction({
     keys: [
