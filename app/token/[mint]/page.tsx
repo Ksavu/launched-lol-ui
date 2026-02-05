@@ -6,6 +6,8 @@ import { Header } from '../../../components/Header';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import Image from 'next/image';
 import { buyTokens, sellTokens } from '../../../lib/bonding-curve-client';
+import { PriceChart } from '../../../components/PriceChart';
+import { TokenWebSocket } from '../../../lib/websocket-client';
 
 interface TokenData {
   address: string;
@@ -33,10 +35,40 @@ export default function TokenPage() {
   const [buyAmount, setBuyAmount] = useState('0.1');
   const [sellAmount, setSellAmount] = useState('');
   const [trading, setTrading] = useState(false);
+  const [trades, setTrades] = useState<any[]>([]);
+  const [ws, setWs] = useState<TokenWebSocket | null>(null);
 
   useEffect(() => {
-    fetchTokenData();
-  }, [mint]);
+  if (!token) return;
+  
+  const websocket = new TokenWebSocket('https://api.devnet.solana.com');
+  
+  websocket.subscribeToToken(token.bondingCurve, (data) => {
+    console.log('📡 Real-time update:', data);
+    
+    // Update token data
+    setToken(prev => prev ? {
+      ...prev,
+      solCollected: data.solCollected,
+      tokensSold: data.tokensSold,
+      progress: data.progress,
+    } : null);
+    
+    // Add to trades for chart
+    setTrades(prev => [...prev, {
+      timestamp: Date.now(),
+      price: data.solCollected / (data.tokensSold || 1),
+      type: 'buy',
+      amount: data.tokensSold,
+    }].slice(-50)); // Keep last 50 trades
+  });
+  
+  setWs(websocket);
+  
+  return () => {
+    websocket.unsubscribe();
+  };
+}, [token?.bondingCurve]);
 
   const fetchTokenData = async () => {
     try {
@@ -297,12 +329,10 @@ export default function TokenPage() {
               )}
             </div>
 
-            {/* Chart Placeholder */}
+            {/* Chart */}
             <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
-              <h3 className="text-lg sm:text-xl font-bold text-white mb-4">Price Chart</h3>
-              <div className="bg-gray-800 rounded-lg p-6 sm:p-8 text-center">
-                <p className="text-gray-400 text-sm sm:text-base">📊 Chart coming soon!</p>
-              </div>
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-4">Price Chart</h3>
+            <PriceChart trades={trades} />
             </div>
           </div>
         </div>

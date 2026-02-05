@@ -1,6 +1,6 @@
 import { Connection, PublicKey, Transaction, TransactionInstruction, SystemProgram } from '@solana/web3.js';
 
-const BONDING_CURVE_PROGRAM_ID = new PublicKey('FqjbzRkHvZ6kAQkXHR4aZ5EECrtXeMkJF46Di55na6Hq');
+const BONDING_CURVE_PROGRAM_ID = new PublicKey('76SBTzzjPquPkiH6E9rj31eyQKkBjx1x7uDPHkw5UgwJ');
 const TOKEN_FACTORY_PROGRAM_ID = new PublicKey('7F4JYKAEs7VhVd9P8E1wHhd8aiwtKYeo1tTxabDqpCvX');
 
 // Correct discriminators from IDL
@@ -11,7 +11,10 @@ export async function initializeBondingCurve(
   connection: Connection,
   wallet: any,
   mintAddress: string,
-  treasuryAddress: string
+  treasuryAddress: string,
+  isPremium: boolean,
+  launchDelay: number,     // 0-300s for both tiers
+  enableAntiBot: boolean   // Only works for premium
 ) {
   const mint = new PublicKey(mintAddress);
   const treasury = new PublicKey(treasuryAddress);
@@ -22,12 +25,23 @@ export async function initializeBondingCurve(
   );
   
   console.log('📍 Initializing bonding curve:', bondingCurve.toBase58());
+  console.log('Premium:', isPremium, 'Launch delay:', launchDelay, 'Anti-bot:', enableAntiBot);
   
-  // Serialize: discriminator + mint (32 bytes) + treasury (32 bytes)
-  const data = Buffer.alloc(8 + 32 + 32);
+  // Serialize: discriminator + mint (32) + treasury (32) + is_premium (1) + launch_delay (8) + enable_anti_bot (1)
+  const data = Buffer.alloc(8 + 32 + 32 + 1 + 8 + 1);
   INITIALIZE_CURVE_DISCRIMINATOR.copy(data, 0);
   mint.toBuffer().copy(data, 8);
   treasury.toBuffer().copy(data, 40);
+  data.writeUInt8(isPremium ? 1 : 0, 72);
+  
+  // Write i64 launch_delay
+  const delayLow = launchDelay & 0xFFFFFFFF;
+  const delayHigh = Math.floor(launchDelay / 0x100000000);
+  data.writeUInt32LE(delayLow, 73);
+  data.writeInt32LE(delayHigh, 77);
+  
+  // Write enable_anti_bot
+  data.writeUInt8(enableAntiBot ? 1 : 0, 81);
   
   const instruction = new TransactionInstruction({
     keys: [
@@ -49,7 +63,7 @@ export async function initializeBondingCurve(
   const txid = await connection.sendRawTransaction(signed.serialize());
   await connection.confirmTransaction(txid, 'confirmed');
   
-  console.log('✅ Bonding curve initialized!');
+  console.log('✅ Bonding curve initialized with virtual AMM!');
   console.log('📝 TX:', txid);
   
   return txid;

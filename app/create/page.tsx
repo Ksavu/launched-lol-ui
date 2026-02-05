@@ -14,8 +14,8 @@ export default function CreateToken() {
     name: '',
     symbol: '',
     description: '',
-    tier: 'free' as 'Free' | 'Premium',
-    category: 'meme' as 'Meme' | 'AI' | 'Gaming' | 'DeFi' | 'NFT' | 'Other',
+    tier: 'free' as 'free' | 'premium',
+    category: 'meme' as 'meme' | 'ai' | 'gaming' | 'defi' | 'nft' | 'other',
     antiBotEnabled: false,
     launchDelay: 60,
     devBuyAmount: 0,
@@ -128,7 +128,10 @@ const bondingCurveTx = await initializeBondingCurve(
   connection,
   wallet,
   tokenResult.mint,
-  treasuryWallet
+  treasuryWallet,
+  formData.tier === 'premium',      // isPremium
+  formData.launchDelay,              // launchDelay (0-300)
+  formData.antiBotEnabled            // enableAntiBot
 );
 
 console.log('✅ Bonding curve initialized!', bondingCurveTx);
@@ -162,8 +165,8 @@ alert(message);
         name: '',
         symbol: '',
         description: '',
-        tier: 'Free',
-        category: 'Meme',
+        tier: 'free',
+        category: 'meme',
         antiBotEnabled: false,
         launchDelay: 60,
         devBuyAmount: 0,
@@ -304,9 +307,9 @@ alert(message);
               <div className="grid md:grid-cols-2 gap-4">
                 {/* Free Tier */}
                 <div
-                  onClick={() => setFormData({...formData, tier: 'Free', antiBotEnabled: false})}
+                  onClick={() => setFormData({...formData, tier: 'free', antiBotEnabled: false})}
                   className={`cursor-pointer p-6 rounded-xl border-2 transition ${
-                    formData.tier === 'Free'
+                    formData.tier === 'free'
                       ? 'border-yellow-400 bg-yellow-400/10'
                       : 'border-gray-700 hover:border-gray-600'
                   }`}
@@ -326,9 +329,9 @@ alert(message);
 
                 {/* Premium Tier */}
                 <div
-                  onClick={() => setFormData({...formData, tier: 'Premium'})}
+                  onClick={() => setFormData({...formData, tier: 'premium'})}
                   className={`cursor-pointer p-6 rounded-xl border-2 transition ${
-                    formData.tier === 'Premium'
+                    formData.tier === 'premium'
                       ? 'border-yellow-400 bg-yellow-400/10'
                       : 'border-gray-700 hover:border-gray-600'
                   }`}
@@ -349,7 +352,7 @@ alert(message);
             </div>
 
             {/* Anti-Bot Toggle (Premium Only) */}
-            {formData.tier === 'Premium' && (
+            {formData.tier === 'premium' && (
               <div className="mb-6 bg-black/50 p-6 rounded-xl border border-yellow-400/30">
                 <label className="flex items-center justify-between cursor-pointer">
                   <div>
@@ -428,7 +431,7 @@ alert(message);
     })()}
     
       <p className="text-xs text-gray-400 mt-1">
-        Total cost: {(parseFloat(formData.tier === 'Free' ? '0.01' : '0.5') + formData.devBuyAmount).toFixed(2)} SOL
+        Total cost: {(parseFloat(formData.tier === 'free' ? '0.01' : '0.5') + formData.devBuyAmount).toFixed(2)} SOL
       </p>
     </div>
   )}
@@ -446,7 +449,7 @@ alert(message);
 >
   {isCreating 
     ? 'Creating...' 
-    : `Create Token (${(parseFloat(formData.tier === 'Free' ? '0.01' : '0.5') + formData.devBuyAmount).toFixed(2)} SOL)`
+    : `Create Token (${(parseFloat(formData.tier === 'free' ? '0.01' : '0.5') + formData.devBuyAmount).toFixed(2)} SOL)`
   }
 </button>
 
