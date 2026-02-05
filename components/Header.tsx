@@ -18,14 +18,15 @@ export const Header = () => {
         <div className="flex justify-between items-center h-16 sm:h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
-            <div className="w-8 h-8 sm:w-12 sm:h-12 relative">
-              <Image 
-                src="/logo.jpg" 
-                alt="Launched.lol" 
-                fill
-                className="object-contain"
-              />
-            </div>
+            <div className="w-8 h-8 sm:w-12 sm:h-12">
+  <Image 
+    src="/logo.jpg" 
+    alt="Launched.lol" 
+    width={48}
+    height={48}
+    className="object-contain w-full h-full"
+  />
+</div>
             <span className="text-lg sm:text-2xl font-bold text-yellow-400">
               launched.lol
             </span>

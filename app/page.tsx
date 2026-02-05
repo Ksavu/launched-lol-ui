@@ -31,7 +31,7 @@ export default function Home() {
               <ArrowRightIcon className="ml-2 h-5 w-5" />
             </Link>
             <Link 
-              href="/tokens"
+              href="/explore"
               className="inline-flex items-center px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white font-semibold rounded-lg transition"
             >
               Explore Tokens
@@ -95,7 +95,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-gray-800 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-400">
-          <p>© 2025 Launched.lol - Fair Token Launches on Solana</p>
+          <p>© 2026 Launched.lol - Fair Token Launches on Solana</p>
         </div>
       </footer>
     </div>
