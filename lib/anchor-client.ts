@@ -44,7 +44,7 @@ export const getTokenMetadataPDA = (mint: PublicKey) => {
 
 export const getBondingCurvePDA = (mint: PublicKey) => {
   const BONDING_CURVE_PROGRAM_ID = new PublicKey(
-    '76SBTzzjPquPkiH6E9rj31eyQKkBjx1x7uDPHkw5UgwJ'
+    '94fy3DtZ6fKHg3P5wTkdC8CHkkzWMtUDgaTtLHsqycS8'
   );
   return PublicKey.findProgramAddressSync(
     [Buffer.from('bonding-curve'), mint.toBuffer()],

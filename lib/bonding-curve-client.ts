@@ -1,11 +1,62 @@
 import { Connection, PublicKey, Transaction, TransactionInstruction, SystemProgram } from '@solana/web3.js';
 
-const BONDING_CURVE_PROGRAM_ID = new PublicKey('76SBTzzjPquPkiH6E9rj31eyQKkBjx1x7uDPHkw5UgwJ');
+const BONDING_CURVE_PROGRAM_ID = new PublicKey('94fy3DtZ6fKHg3P5wTkdC8CHkkzWMtUDgaTtLHsqycS8');
 const TOKEN_FACTORY_PROGRAM_ID = new PublicKey('7F4JYKAEs7VhVd9P8E1wHhd8aiwtKYeo1tTxabDqpCvX');
 
 // Correct discriminators from IDL
 const INITIALIZE_CURVE_DISCRIMINATOR = Buffer.from([170, 84, 186, 253, 131, 149, 95, 213]);
 const BUY_TOKENS_DISCRIMINATOR = Buffer.from([189, 21, 230, 133, 247, 2, 110, 42]);
+
+export type BondingCurveState = {
+  tokensSold: number;
+  solCollected: number;
+  progress: number;
+  graduated: boolean;
+};
+
+export async function getBondingCurveState(
+  connection: Connection,
+  mintAddress: string
+): Promise<BondingCurveState> {
+  const [bondingCurve] = PublicKey.findProgramAddressSync(
+    [Buffer.from('bonding-curve'), new PublicKey(mintAddress).toBuffer()],
+    BONDING_CURVE_PROGRAM_ID
+  );
+
+  const accountInfo = await connection.getAccountInfo(bondingCurve, 'confirmed');
+  if (!accountInfo) throw new Error('Bonding curve account not found');
+
+  const data = accountInfo.data;
+
+  console.log('🔍 Raw account data length:', data.length);
+  console.log('🔍 First 250 bytes:', Array.from(data.slice(0, 250)));
+  
+  // Read raw bytes at each offset
+  const tokensSoldRaw = data.readBigUInt64LE(112);
+  const solCollectedRaw = data.readBigUInt64LE(120);
+  const isActiveRaw = data[168];
+  
+  console.log('🔍 tokens_sold raw (at offset 112):', tokensSoldRaw.toString());
+  console.log('🔍 sol_collected raw (at offset 120):', solCollectedRaw.toString());
+  console.log('🔍 is_active raw (at offset 168):', isActiveRaw);
+  
+  const tokensSold = Number(tokensSoldRaw) / 1_000_000;
+  const solCollected = Number(solCollectedRaw) / 1_000_000_000;
+  const isActive = isActiveRaw === 1;
+  
+  const graduationThreshold = 81;
+  const progress = (solCollected / graduationThreshold) * 100;
+  const graduated = !isActive;
+
+  console.log('📊 Bonding Curve State:');
+  console.log('  Tokens Sold:', tokensSold.toFixed(2));
+  console.log('  SOL Collected:', solCollected.toFixed(6), 'SOL');
+  console.log('  Is Active:', isActive);
+  console.log('  Progress:', progress.toFixed(4) + '%');
+  console.log('  Graduated:', graduated);
+
+  return { tokensSold, solCollected, progress, graduated };
+}
 
 export async function initializeBondingCurve(
   connection: Connection,
@@ -82,15 +133,10 @@ export async function buyTokens(
     BONDING_CURVE_PROGRAM_ID
   );
   
-  const [tokenMetadata] = PublicKey.findProgramAddressSync(
-    [Buffer.from('token-metadata'), mint.toBuffer()],
-    TOKEN_FACTORY_PROGRAM_ID
-  );
-  
   const bondingCurveAccount = await connection.getAccountInfo(bondingCurve);
   if (!bondingCurveAccount) throw new Error('Bonding curve not found');
   
-  const treasury = new PublicKey(bondingCurveAccount.data.slice(40, 72));
+  const treasury = new PublicKey(bondingCurveAccount.data.slice(8 + 64, 8 + 96));
   
   console.log('💰 Buying tokens for', solAmount, 'SOL');
   
@@ -109,7 +155,6 @@ export async function buyTokens(
   const instruction = new TransactionInstruction({
     keys: [
       { pubkey: bondingCurve, isSigner: false, isWritable: true },
-      { pubkey: tokenMetadata, isSigner: false, isWritable: false },
       { pubkey: treasury, isSigner: false, isWritable: true },
       { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
@@ -129,6 +174,69 @@ export async function buyTokens(
   await connection.confirmTransaction(txid, 'confirmed');
   
   console.log('✅ Tokens bought!');
+  console.log('📝 TX:', txid);
+  
+const state = await getBondingCurveState(connection, mintAddress);
+console.log('Tokens sold:', state.tokensSold);
+console.log('SOL collected:', state.solCollected);
+
+  return txid;
+}
+
+// Dev buy discriminator (get from IDL or calculate)
+const DEV_BUY_DISCRIMINATOR = Buffer.from([195, 220, 253, 89, 163, 75, 172, 209]);
+
+export async function devBuy(
+  connection: Connection,
+  wallet: any,
+  mintAddress: string,
+  solAmount: number
+) {
+  const mint = new PublicKey(mintAddress);
+  
+  const [bondingCurve] = PublicKey.findProgramAddressSync(
+    [Buffer.from('bonding-curve'), mint.toBuffer()],
+    BONDING_CURVE_PROGRAM_ID
+  );
+  
+  const bondingCurveAccount = await connection.getAccountInfo(bondingCurve);
+  if (!bondingCurveAccount) throw new Error('Bonding curve not found');
+  
+  const treasury = new PublicKey(bondingCurveAccount.data.slice(72, 104));
+  
+  console.log('👤 Dev buying tokens for', solAmount, 'SOL');
+  
+  const data = Buffer.alloc(16);
+  DEV_BUY_DISCRIMINATOR.copy(data, 0);
+  
+  const lamports = Math.floor(solAmount * 1_000_000_000);
+  const lamportsLow = lamports & 0xFFFFFFFF;
+  const lamportsHigh = Math.floor(lamports / 0x100000000);
+  data.writeUInt32LE(lamportsLow, 8);
+  data.writeUInt32LE(lamportsHigh, 12);
+  
+  const instruction = new TransactionInstruction({
+    keys: [
+      { pubkey: bondingCurve, isSigner: false, isWritable: true },
+      { pubkey: treasury, isSigner: false, isWritable: true },
+      { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    ],
+    programId: BONDING_CURVE_PROGRAM_ID,
+    data,
+  });
+  
+  const transaction = new Transaction().add(instruction);
+  transaction.feePayer = wallet.publicKey;
+  
+  const { blockhash } = await connection.getLatestBlockhash();
+  transaction.recentBlockhash = blockhash;
+  
+  const signed = await wallet.signTransaction(transaction);
+  const txid = await connection.sendRawTransaction(signed.serialize());
+  await connection.confirmTransaction(txid, 'confirmed');
+  
+  console.log('✅ Dev bought tokens!');
   console.log('📝 TX:', txid);
   
   return txid;

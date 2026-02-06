@@ -12,7 +12,7 @@ export class TokenWebSocket {
   private connection: Connection;
   private subscriptionId: number | null = null;
   private pendingUpdate: TokenUpdate | null = null;
-  private intervalId: number | null = null; // <--- broj, ne NodeJS.Timer
+  private intervalId: number | null = null;
 
   constructor(endpoint: string) {
     this.connection = new Connection(endpoint, 'confirmed');
@@ -26,16 +26,29 @@ export class TokenWebSocket {
       (accountInfo) => {
         const data = accountInfo.data;
 
-        const tokensSold = Number(data.readBigUInt64LE(8 + 104)) / 1_000_000;
-        const solCollected = Number(data.readBigUInt64LE(8 + 112)) / 1_000_000_000;
-        const progress = (solCollected / 81) * 100;
+        // 🔹 RAW VALUES (lamports / base units)
+        const tokensSoldRaw = Number(data.readBigUInt64LE(8 + 104));
+        const solCollectedLamports = Number(
+          data.readBigUInt64LE(8 + 112)
+        );
 
-        this.pendingUpdate = { tokensSold, solCollected, progress };
+        // 🔹 DISPLAY VALUES
+        const tokensSold = tokensSoldRaw / 1_000_000;
+        const solCollected = solCollectedLamports / 1_000_000_000;
+
+        // 🔹 LOGIC (81 SOL = 81_000_000_000 lamports)
+        const progress =
+          (solCollectedLamports / 81_000_000_000) * 100;
+
+        this.pendingUpdate = {
+          tokensSold,
+          solCollected,
+          progress,
+        };
       },
       'confirmed'
     );
 
-    // Browser-safe setInterval
     this.intervalId = window.setInterval(() => {
       if (this.pendingUpdate) {
         callback(this.pendingUpdate);

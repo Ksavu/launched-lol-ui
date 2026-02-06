@@ -3,7 +3,7 @@ import { Connection, PublicKey } from '@solana/web3.js';
 
 const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
 const TOKEN_FACTORY_PROGRAM_ID = new PublicKey('7F4JYKAEs7VhVd9P8E1wHhd8aiwtKYeo1tTxabDqpCvX');
-const BONDING_CURVE_PROGRAM_ID = new PublicKey('FqjbzRkHvZ6kAQkXHR4aZ5EECrtXeMkJF46Di55na6Hq');
+const BONDING_CURVE_PROGRAM_ID = new PublicKey('94fy3DtZ6fKHg3P5wTkdC8CHkkzWMtUDgaTtLHsqycS8');
 
 export async function GET() {
   try {
@@ -13,7 +13,7 @@ export async function GET() {
     const accounts = await connection.getProgramAccounts(TOKEN_FACTORY_PROGRAM_ID, {
       filters: [
         {
-          dataSize: 8 + 32 + 32 + 36 + 14 + 204 + 1 + 1 + 8 + 8 + 32 + 1 + 1 + 1 + 1, // TokenMetadata size
+          dataSize: 8 + 32 + 32 + 36 + 14 + 204 + 1 + 1 + 8 + 8 + 32 + 1 + 1 + 1 + 1,
         },
       ],
     });
@@ -29,26 +29,26 @@ export async function GET() {
           const mint = new PublicKey(data.slice(8, 40));
           const creator = new PublicKey(data.slice(40, 72));
           
-          // Parse name (u32 length + string)
+          // Parse name
           const nameLength = data.readUInt32LE(72);
           const name = data.slice(76, 76 + nameLength).toString('utf8');
           
-          // Parse symbol (after name)
+          // Parse symbol
           const symbolOffset = 76 + nameLength;
           const symbolLength = data.readUInt32LE(symbolOffset);
           const symbol = data.slice(symbolOffset + 4, symbolOffset + 4 + symbolLength).toString('utf8');
           
-          // Parse uri (after symbol)
+          // Parse uri
           const uriOffset = symbolOffset + 4 + symbolLength;
           const uriLength = data.readUInt32LE(uriOffset);
           const uri = data.slice(uriOffset + 4, uriOffset + 4 + uriLength).toString('utf8');
 
-          // Parse tier (after uri) - NEW!
+          // Parse tier
           const tierOffset = uriOffset + 4 + uriLength;
-          const tier = data[tierOffset]; // 0 = Free, 1 = Premium
+          const tier = data[tierOffset];
 
-          // Parse category (after tier) - NEW!
-          const category = data[tierOffset + 1]; // 0=meme, 1=ai, 2=gaming, 3=defi, 4=nft, 5=other
+          // Parse category
+          const category = data[tierOffset + 1];
           
           // Get bonding curve data
           const [bondingCurve] = PublicKey.findProgramAddressSync(
@@ -60,19 +60,29 @@ export async function GET() {
           let tokensSold = 0;
           let isActive = false;
           
-        try {
-          const bondingCurveAccount = await connection.getAccountInfo(bondingCurve);
-          if (bondingCurveAccount) {
-            const curveData = bondingCurveAccount.data;
-    
-            // Skip discriminator (8 bytes) then parse struct
-            tokensSold = Number(curveData.readBigUInt64LE(8 + 104)); // tokens_sold at offset 104
-            solCollected = Number(curveData.readBigUInt64LE(8 + 112)); // sol_collected at offset 112
-            isActive = curveData[8 + 136] === 1; // is_active at offset 136
+          try {
+            const bondingCurveAccount = await connection.getAccountInfo(bondingCurve);
+            if (bondingCurveAccount) {
+              const curveData = bondingCurveAccount.data;
+      
+              // CORRECT OFFSETS for new BondingCurve struct
+              // discriminator: 0-8
+              // mint: 8-40
+              // creator: 40-72
+              // treasury: 72-104
+              // total_supply: 104-112
+              // tokens_sold: 112-120 ← HERE
+              // sol_collected: 120-128 ← HERE
+              // ...
+              // is_active: 168-169 ← HERE
+              
+              tokensSold = Number(curveData.readBigUInt64LE(112));
+              solCollected = Number(curveData.readBigUInt64LE(120));
+              isActive = curveData[168] === 1;
+            }
+          } catch (error) {
+            console.log(`No bonding curve for ${mint.toBase58()}`);
           }
-        } catch (error) {
-          console.log(`No bonding curve for ${mint.toBase58()}`);
-        }
           
           // Fetch metadata from IPFS
           let imageUrl = '';

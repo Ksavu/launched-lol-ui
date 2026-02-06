@@ -1,5 +1,5 @@
 {
-  "address": "FqjbzRkHvZ6kAQkXHR4aZ5EECrtXeMkJF46Di55na6Hq",
+  "address": "94fy3DtZ6fKHg3P5wTkdC8CHkkzWMtUDgaTtLHsqycS8",
   "metadata": {
     "name": "bonding_curve",
     "version": "0.1.0",
@@ -52,7 +52,69 @@
           }
         },
         {
-          "name": "token_metadata"
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "buyer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "sol_amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "dev_buy",
+      "discriminator": [
+        204,
+        237,
+        9,
+        67,
+        164,
+        234,
+        146,
+        78
+      ],
+      "accounts": [
+        {
+          "name": "bonding_curve",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  111,
+                  110,
+                  100,
+                  105,
+                  110,
+                  103,
+                  45,
+                  99,
+                  117,
+                  114,
+                  118,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "bonding_curve.mint",
+                "account": "BondingCurve"
+              }
+            ]
+          }
         },
         {
           "name": "treasury",
@@ -120,7 +182,7 @@
           }
         },
         {
-          "name": "creator",
+          "name": "dev_wallet",
           "writable": true
         },
         {
@@ -195,6 +257,18 @@
         {
           "name": "treasury",
           "type": "pubkey"
+        },
+        {
+          "name": "is_premium",
+          "type": "bool"
+        },
+        {
+          "name": "launch_delay",
+          "type": "i64"
+        },
+        {
+          "name": "enable_anti_bot",
+          "type": "bool"
         }
       ]
     },
@@ -302,8 +376,43 @@
     },
     {
       "code": 6004,
-      "name": "ExceedsMaxBuyLimit",
-      "msg": "Exceeds maximum buy limit (2%)"
+      "name": "ExceedsMaxBuy",
+      "msg": "Exceeds maximum buy limit"
+    },
+    {
+      "code": 6005,
+      "name": "ExceedsCurveSupply",
+      "msg": "Exceeds curve token supply (770M)"
+    },
+    {
+      "code": 6006,
+      "name": "InsufficientLiquidity",
+      "msg": "Insufficient liquidity"
+    },
+    {
+      "code": 6007,
+      "name": "StillActive",
+      "msg": "Token is still active"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidLaunchDelay",
+      "msg": "Invalid launch delay (must be 0-300 seconds)"
+    },
+    {
+      "code": 6009,
+      "name": "AntiBotRequiresPremium",
+      "msg": "Anti-bot protection requires premium tier"
+    },
+    {
+      "code": 6010,
+      "name": "OnlyCreator",
+      "msg": "Only the creator can call this function"
+    },
+    {
+      "code": 6011,
+      "name": "DevBuyWindowClosed",
+      "msg": "Dev buy window has closed. Public trading has started."
     }
   ],
   "types": [
@@ -341,7 +450,19 @@
             "type": "u64"
           },
           {
-            "name": "base_price",
+            "name": "virtual_sol_reserves",
+            "type": "u64"
+          },
+          {
+            "name": "virtual_token_reserves",
+            "type": "u64"
+          },
+          {
+            "name": "real_sol_reserves",
+            "type": "u64"
+          },
+          {
+            "name": "real_token_reserves",
             "type": "u64"
           },
           {
@@ -358,6 +479,42 @@
           },
           {
             "name": "graduation_threshold",
+            "type": "u64"
+          },
+          {
+            "name": "curve_supply",
+            "type": "u64"
+          },
+          {
+            "name": "lp_supply",
+            "type": "u64"
+          },
+          {
+            "name": "dev_supply",
+            "type": "u64"
+          },
+          {
+            "name": "is_premium",
+            "type": "bool"
+          },
+          {
+            "name": "anti_bot_enabled",
+            "type": "bool"
+          },
+          {
+            "name": "launch_delay",
+            "type": "i64"
+          },
+          {
+            "name": "max_buy_initial",
+            "type": "u64"
+          },
+          {
+            "name": "dev_tokens_bought",
+            "type": "u64"
+          },
+          {
+            "name": "dev_tokens_sold",
             "type": "u64"
           },
           {
