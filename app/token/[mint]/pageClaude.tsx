@@ -5,9 +5,9 @@ import { useParams } from 'next/navigation';
 import { Header } from '../../../components/Header';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import Image from 'next/image';
-import { buyTokens, sellTokens } from '../../../lib/bonding-curve-client';
+import { buyTokens, sellTokens } from '../../../lib/bonding-curve-clientClaude';
+import { PriceChart } from '../../../components/PriceChart';
 import { TokenWebSocket } from '../../../lib/websocket-client';
-import { TradingViewChart } from '../../../components/TradingViewChart';
 
 interface TokenData {
   address: string;
@@ -24,128 +24,64 @@ interface TokenData {
   marketCap: number;
 }
 
-interface CandleData {
-  time: number;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-}
-
 export default function TokenPage() {
   const params = useParams();
   const mint = params.mint as string;
   const { publicKey, connected, signTransaction, signAllTransactions } = useWallet();
   const { connection } = useConnection();
-
+  
   const [token, setToken] = useState<TokenData | null>(null);
   const [loading, setLoading] = useState(true);
   const [buyAmount, setBuyAmount] = useState('0.1');
   const [sellAmount, setSellAmount] = useState('');
   const [trading, setTrading] = useState(false);
-  const [chartData, setChartData] = useState<CandleData[]>([]);
+  const [trades, setTrades] = useState<any[]>([]);
   const [ws, setWs] = useState<TokenWebSocket | null>(null);
 
-  // WebSocket subscription for real-time updates
   useEffect(() => {
-    if (!token) return;
+  if (!token) return;
+  
+  const websocket = new TokenWebSocket('https://api.devnet.solana.com');
+  
+  websocket.subscribeToToken(token.bondingCurve, (data) => {
+    console.log('📡 Real-time update:', data);
+    
+    // Update token data
+    setToken(prev => prev ? {
+      ...prev,
+      solCollected: data.solCollected,
+      tokensSold: data.tokensSold,
+      progress: data.progress,
+    } : null);
+    
+    // Add to trades for chart
+    setTrades(prev => [...prev, {
+      timestamp: Date.now(),
+      price: data.solCollected / (data.tokensSold || 1),
+      type: 'buy',
+      amount: data.tokensSold,
+    }].slice(-50)); // Keep last 50 trades
+  });
+  
+  setWs(websocket);
+  
+  return () => {
+    websocket.unsubscribe();
+  };
+}, [token?.bondingCurve]);
 
-    const websocket = new TokenWebSocket('https://api.devnet.solana.com');
-
-    websocket.subscribeToToken(token.bondingCurve, (data) => {
-      console.log('📡 Real-time update:', data);
-
-      // Update token data
-      setToken((prev) =>
-        prev
-          ? {
-              ...prev,
-              solCollected: data.solCollected,
-              tokensSold: data.tokensSold,
-              progress: data.progress,
-            }
-          : null
-      );
-
-      // Add to chart data
-      const price = data.solCollected / (data.tokensSold || 1);
-      const timestamp = Math.floor(Date.now() / 1000);
-
-      setChartData((prev) => {
-        const newData = [...prev];
-        const lastCandle = newData[newData.length - 1];
-
-        if (lastCandle && timestamp - lastCandle.time < 60) {
-          // Update last candle if within 1 minute
-          lastCandle.close = price;
-          lastCandle.high = Math.max(lastCandle.high, price);
-          lastCandle.low = Math.min(lastCandle.low, price);
-        } else {
-          // Create new candle
-          newData.push({
-            time: timestamp,
-            open: price,
-            high: price,
-            low: price,
-            close: price,
-          });
-        }
-
-        return newData.slice(-100); // Keep last 100 candles
-      });
-    });
-
-    setWs(websocket);
-
-    return () => {
-      websocket.unsubscribe();
-    };
-  }, [token?.bondingCurve]);
-
-  // Fetch initial token data
-  useEffect(() => {
-    const fetchTokenData = async () => {
-      try {
-        const response = await fetch('/api/tokens');
-        const data = await response.json();
-        const foundToken = data.tokens.find(
-          (t: TokenData) => t.address === mint
-        );
-        setToken(foundToken || null);
-
-        // Initialize chart with mock data
-        if (foundToken) {
-          const mockChartData: CandleData[] = [];
-          let basePrice = foundToken.solCollected / (foundToken.tokensSold || 1);
-          const now = Math.floor(Date.now() / 1000);
-
-          for (let i = 50; i > 0; i--) {
-            const variation = (Math.random() - 0.5) * basePrice * 0.1;
-            const open = basePrice + variation;
-            const close = basePrice + (Math.random() - 0.5) * basePrice * 0.1;
-
-            mockChartData.push({
-              time: now - i * 60,
-              open,
-              high: Math.max(open, close) * 1.02,
-              low: Math.min(open, close) * 0.98,
-              close,
-            });
-
-            basePrice = close;
-          }
-
-          setChartData(mockChartData);
-        }
-      } catch (error) {
-        console.error('Error fetching token:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTokenData();
-  }, [mint]);
+  const fetchTokenData = async () => {
+    try {
+      const response = await fetch('/api/tokens');
+      const data = await response.json();
+      const foundToken = data.tokens.find((t: TokenData) => t.address === mint);
+      setToken(foundToken || null);
+    } catch (error) {
+      console.error('Error fetching token:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleBuy = async () => {
     if (!connected || !publicKey || !token) {
@@ -162,18 +98,9 @@ export default function TokenPage() {
         token.address,
         parseFloat(buyAmount)
       );
-
-      alert(
-        `✅ Success!\n\nBought tokens!\n\nTX: https://solscan.io/tx/${tx}?cluster=devnet`
-      );
-
-      // Refetch token data
-      const response = await fetch('/api/tokens');
-      const data = await response.json();
-      const updatedToken = data.tokens.find(
-        (t: TokenData) => t.address === mint
-      );
-      if (updatedToken) setToken(updatedToken);
+      
+      alert(`✅ Success!\n\nBought tokens!\n\nTX: https://solscan.io/tx/${tx}?cluster=devnet`);
+      await fetchTokenData();
     } catch (error) {
       console.error(error);
       alert(`Error: ${error}`);
@@ -197,18 +124,9 @@ export default function TokenPage() {
         token.address,
         parseFloat(sellAmount)
       );
-
-      alert(
-        `✅ Success!\n\nSold tokens!\n\nTX: https://solscan.io/tx/${tx}?cluster=devnet`
-      );
-
-      // Refetch token data
-      const response = await fetch('/api/tokens');
-      const data = await response.json();
-      const updatedToken = data.tokens.find(
-        (t: TokenData) => t.address === mint
-      );
-      if (updatedToken) setToken(updatedToken);
+      
+      alert(`✅ Success!\n\nSold tokens!\n\nTX: https://solscan.io/tx/${tx}?cluster=devnet`);
+      await fetchTokenData();
     } catch (error: any) {
       console.error(error);
       alert(`Error: ${error.message || error.toString()}`);
@@ -242,7 +160,7 @@ export default function TokenPage() {
   return (
     <div className="min-h-screen bg-black">
       <Header />
-
+      
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Left: Token Info */}
@@ -265,51 +183,38 @@ export default function TokenPage() {
 
             {/* Token Details */}
             <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
-              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-                {token.name}
-              </h1>
-              <p className="text-gray-400 text-base sm:text-lg mb-4">
-                ${token.symbol}
-              </p>
-
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">{token.name}</h1>
+              <p className="text-gray-400 text-base sm:text-lg mb-4">${token.symbol}</p>
+              
               {token.description && (
-                <p className="text-gray-300 mb-6 text-sm sm:text-base">
-                  {token.description}
-                </p>
+                <p className="text-gray-300 mb-6 text-sm sm:text-base">{token.description}</p>
               )}
 
               {/* Stats */}
               <div className="space-y-3 sm:space-y-4">
                 <div className="flex justify-between text-sm sm:text-base">
                   <span className="text-gray-400">Market Cap</span>
-                  <span className="text-white font-semibold">
-                    ${token.marketCap.toFixed(2)}
-                  </span>
+                  <span className="text-white font-semibold">${token.marketCap.toFixed(2)}</span>
                 </div>
-
+                
                 <div className="flex justify-between text-sm sm:text-base">
                   <span className="text-gray-400">SOL Collected</span>
-                  <span className="text-white font-semibold">
-                    {token.solCollected.toFixed(3)} SOL
-                  </span>
+                  <span className="text-white font-semibold">{token.solCollected.toFixed(3)} SOL</span>
                 </div>
-
+                
                 <div className="flex justify-between text-sm sm:text-base">
                   <span className="text-gray-400">Tokens Sold</span>
                   <span className="text-white font-semibold">
-                    {token.tokensSold >= 1000000
+                    {token.tokensSold >= 1000000 
                       ? `${(token.tokensSold / 1000000).toFixed(2)}M`
-                      : `${(token.tokensSold / 1000).toFixed(1)}K`}
+                      : `${(token.tokensSold / 1000).toFixed(1)}K`
+                    }
                   </span>
                 </div>
 
                 <div className="flex justify-between text-sm sm:text-base">
                   <span className="text-gray-400">Status</span>
-                  <span
-                    className={`font-semibold ${
-                      token.isActive ? 'text-green-400' : 'text-yellow-400'
-                    }`}
-                  >
+                  <span className={`font-semibold ${token.isActive ? 'text-green-400' : 'text-yellow-400'}`}>
                     {token.isActive ? '🟢 Active' : '🎓 Graduated'}
                   </span>
                 </div>
@@ -319,9 +224,7 @@ export default function TokenPage() {
               <div className="mt-6">
                 <div className="flex justify-between text-xs sm:text-sm mb-2">
                   <span className="text-gray-400">Progress to 81 SOL</span>
-                  <span className="text-white font-semibold">
-                    {token.progress.toFixed(2)}%
-                  </span>
+                  <span className="text-white font-semibold">{token.progress.toFixed(2)}%</span>
                 </div>
                 <div className="w-full bg-gray-800 rounded-full h-3">
                   <div
@@ -333,15 +236,13 @@ export default function TokenPage() {
 
               {/* Contract Address */}
               <div className="mt-6 pt-6 border-t border-gray-800">
-                <p className="text-gray-400 text-xs sm:text-sm mb-2">
-                  Contract Address
-                </p>
-                <a
+                <p className="text-gray-400 text-xs sm:text-sm mb-2">Contract Address</p>
+                
                   href={`https://solscan.io/token/${token.address}?cluster=devnet`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-yellow-400 hover:text-yellow-300 text-xs sm:text-sm break-all"
-                >
+                <a>
                   {token.address}
                 </a>
               </div>
@@ -351,9 +252,7 @@ export default function TokenPage() {
           {/* Right: Trading */}
           <div className="order-1 lg:order-2">
             <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-yellow-400/20 mb-6">
-              <h2 className="text-xl sm:text-2xl font-bold text-white mb-6">
-                Trade
-              </h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-6">Trade</h2>
 
               {!token.isActive && (
                 <div className="bg-yellow-400/10 border border-yellow-400/30 rounded-lg p-4 mb-6">
@@ -387,13 +286,7 @@ export default function TokenPage() {
                   </button>
                 </div>
                 <p className="text-gray-400 text-xs sm:text-sm mt-2">
-                  ~
-                  {(
-                    ((parseFloat(buyAmount) * 0.99) / 81) *
-                    800000000 /
-                    1000000
-                  ).toFixed(2)}
-                  M tokens
+                  ~{((parseFloat(buyAmount) * 0.99 / 81) * 800000000 / 1000000).toFixed(2)}M tokens
                 </p>
               </div>
 
@@ -414,9 +307,7 @@ export default function TokenPage() {
                   />
                   <button
                     onClick={handleSell}
-                    disabled={
-                      trading || !connected || !token.isActive || !sellAmount
-                    }
+                    disabled={trading || !connected || !token.isActive || !sellAmount}
                     className="bg-red-500 hover:bg-red-600 disabled:bg-gray-600 text-white font-bold px-4 sm:px-8 py-2 sm:py-3 rounded-lg transition text-sm sm:text-base whitespace-nowrap"
                   >
                     {trading ? 'Selling...' : 'Sell'}
@@ -424,10 +315,7 @@ export default function TokenPage() {
                 </div>
                 <p className="text-gray-400 text-xs sm:text-sm mt-2">
                   {sellAmount && parseFloat(sellAmount) > 0
-                    ? `~${(
-                        ((parseFloat(sellAmount) / 800000000) * 81) *
-                        0.99
-                      ).toFixed(4)} SOL`
+                    ? `~${((parseFloat(sellAmount) / 800000000) * 81 * 0.99).toFixed(4)} SOL`
                     : '1M tokens = 0.0001 SOL'}
                 </p>
               </div>
@@ -441,12 +329,10 @@ export default function TokenPage() {
               )}
             </div>
 
-            {/* TradingView Chart */}
+            {/* Chart */}
             <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
-              <h3 className="text-lg sm:text-xl font-bold text-white mb-4">
-                Price Chart
-              </h3>
-              <TradingViewChart data={chartData} />
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-4">Price Chart</h3>
+            <PriceChart trades={trades} />
             </div>
           </div>
         </div>

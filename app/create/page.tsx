@@ -120,7 +120,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       // Step 4: Initialize bonding curve
 console.log('🔄 Initializing bonding curve...');
 
-const { initializeBondingCurve } = await import('../../lib/bonding-curve-client');
+const { initializeBondingCurve } = await import('../../lib/bonding-curve-clientClaude');
 
 const treasuryWallet = 'GtcpcvS3k24MA3Yhs6bAd1spkdjYmx82KqRxSk6pPWhE';
 
@@ -141,7 +141,7 @@ let buyTx = null;
 if (formData.devBuyAmount > 0) {
   console.log('💰 Buying initial supply:', formData.devBuyAmount, 'SOL');
   
-  const { buyTokens } = await import('../../lib/bonding-curve-client');
+  const { buyTokens } = await import('../../lib/bonding-curve-clientClaude');
   
   buyTx = await buyTokens(
     connection,
