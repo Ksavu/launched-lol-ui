@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { createChart, ColorType } from 'lightweight-charts';
 
 interface CandleData {
   time: number;
@@ -23,58 +22,69 @@ export function TradingViewChart({ data }: TradingViewChartProps) {
   useEffect(() => {
     if (!containerRef.current || chartRef.current) return;
 
-    const chart = createChart(containerRef.current, {
-      layout: {
-        background: { type: ColorType.Solid, color: '#1a1a1a' },
-        textColor: '#d1d5db',
-      },
-      width: containerRef.current.clientWidth,
-      height: 400,
-      timeScale: {
-        timeVisible: true,
-        secondsVisible: false,
-      },
+    // Dynamically import to avoid SSR issues
+    import('lightweight-charts').then(({ createChart, ColorType }) => {
+      const chart = createChart(containerRef.current!, {
+        layout: {
+          background: { type: ColorType.Solid, color: '#1a1a1a' },
+          textColor: '#d1d5db',
+        },
+        width: containerRef.current!.clientWidth,
+        height: 400,
+        timeScale: {
+          timeVisible: true,
+          secondsVisible: false,
+        },
+        grid: {
+          vertLines: { color: '#2a2a2a' },
+          horzLines: { color: '#2a2a2a' },
+        },
+      });
+
+      // Try different methods until one works
+      let series;
+      try {
+        series = (chart as any).addAreaSeries({
+          topColor: 'rgba(250, 204, 21, 0.56)',
+          bottomColor: 'rgba(250, 204, 21, 0.04)',
+          lineColor: 'rgba(250, 204, 21, 1)',
+          lineWidth: 2,
+        });
+      } catch (e) {
+        series = (chart as any).addLineSeries({
+          color: 'rgba(250, 204, 21, 1)',
+          lineWidth: 2,
+        });
+      }
+
+      chartRef.current = chart;
+      seriesRef.current = series;
+
+      const handleResize = () => {
+        chart.applyOptions({ width: containerRef.current!.clientWidth });
+      };
+
+      window.addEventListener('resize', handleResize);
     });
-
-    // Use type casting to avoid TypeScript error
-    const series = (chart as any).addSeries('Candlestick', {
-      upColor: '#22c55e',
-      downColor: '#ef4444',
-      borderUpColor: '#22c55e',
-      borderDownColor: '#ef4444',
-      wickUpColor: '#22c55e',
-      wickDownColor: '#ef4444',
-    });
-
-    chartRef.current = chart;
-    seriesRef.current = series;
-
-    const handleResize = () => {
-      chart.applyOptions({ width: containerRef.current!.clientWidth });
-    };
-
-    window.addEventListener('resize', handleResize);
 
     return () => {
-      window.removeEventListener('resize', handleResize);
-      chart.remove();
-      chartRef.current = null;
-      seriesRef.current = null;
+      if (chartRef.current) {
+        chartRef.current.remove();
+        chartRef.current = null;
+        seriesRef.current = null;
+      }
     };
   }, []);
 
   useEffect(() => {
     if (!seriesRef.current || !data.length) return;
 
-    const formattedData = data.map((candle) => ({
+    const lineData = data.map((candle) => ({
       time: candle.time,
-      open: candle.open,
-      high: candle.high,
-      low: candle.low,
-      close: candle.close,
+      value: candle.close,
     }));
 
-    seriesRef.current.setData(formattedData);
+    seriesRef.current.setData(lineData);
     chartRef.current?.timeScale().fitContent();
   }, [data]);
 
