@@ -6,6 +6,8 @@ import { Header } from '../../../components/Header';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import Image from 'next/image';
 import { buyTokens, sellTokens } from '../../../lib/bonding-curve-client';
+import { getAssociatedTokenAddressSync } from '@solana/spl-token';
+import { PublicKey } from '@solana/web3.js';
 import { TokenWebSocket } from '../../../lib/websocket-client';
 import { TradingViewChart } from '../../../components/TradingViewChart';
 
@@ -40,8 +42,9 @@ export default function TokenPage() {
 
   const [token, setToken] = useState<TokenData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [buyAmount, setBuyAmount] = useState('0.1');
-  const [sellAmount, setSellAmount] = useState('');
+  const [buyAmount, setBuyAmount] = useState("0.1");
+  const [sellAmount, setSellAmount] = useState("");
+  const [userTokenBalance, setUserTokenBalance] = useState<number | null>(null);
   const [trading, setTrading] = useState(false);
   const [chartData, setChartData] = useState<CandleData[]>([]);
   const [ws, setWs] = useState<TokenWebSocket | null>(null);
@@ -101,6 +104,35 @@ export default function TokenPage() {
       websocket.unsubscribe();
     };
   }, [token?.bondingCurve]);
+
+  // Fetch user token balance
+  useEffect(() => {
+    const fetchUserTokenBalance = async () => {
+      if (!publicKey || !token || !connection) {
+        setUserTokenBalance(null);
+        return;
+      }
+
+      try {
+        const mintPublicKey = new PublicKey(token.address);
+        const associatedTokenAccount = getAssociatedTokenAddressSync(
+          mintPublicKey,
+          publicKey
+        );
+
+        const tokenAccountInfo = await connection.getTokenAccountBalance(associatedTokenAccount);
+        setUserTokenBalance(tokenAccountInfo.value.uiAmount);
+      } catch (error) {
+        console.error("Error fetching user token balance:", error);
+        setUserTokenBalance(0);
+      }
+    };
+
+    fetchUserTokenBalance();
+    const interval = setInterval(fetchUserTokenBalance, 10000); // Refresh every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [publicKey, token, connection]);
 
   // Fetch initial token data
   useEffect(() => {
@@ -326,47 +358,33 @@ export default function TokenPage() {
                 <div className="w-full bg-gray-800 rounded-full h-3">
                   <div
                     className="bg-yellow-400 h-3 rounded-full transition-all"
-                    style={{ width: `${Math.min(token.progress, 100)}%` }}
+                    style={{ width: `${token.progress}%` }}
                   />
                 </div>
-              </div>
-
-              {/* Contract Address */}
-              <div className="mt-6 pt-6 border-t border-gray-800">
-                <p className="text-gray-400 text-xs sm:text-sm mb-2">
-                  Contract Address
-                </p>
-                <a
-                  href={`https://solscan.io/token/${token.address}?cluster=devnet`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-yellow-400 hover:text-yellow-300 text-xs sm:text-sm break-all"
-                >
-                  {token.address}
-                </a>
               </div>
             </div>
           </div>
 
-          {/* Right: Trading */}
-          <div className="order-1 lg:order-2">
-            <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-yellow-400/20 mb-6">
-              <h2 className="text-xl sm:text-2xl font-bold text-white mb-6">
+          {/* Right: Chart and Actions */}
+          <div className="order-1 lg:order-2 space-y-6 lg:space-y-8">
+            {/* Chart */}
+            <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
+                Price Chart
+              </h2>
+              <TradingViewChart data={chartData} />
+            </div>
+
+            {/* Buy/Sell Actions */}
+            <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
                 Trade
               </h2>
 
-              {!token.isActive && (
-                <div className="bg-yellow-400/10 border border-yellow-400/30 rounded-lg p-4 mb-6">
-                  <p className="text-yellow-400 text-xs sm:text-sm">
-                    🎓 This token has graduated and is now trading on Raydium!
-                  </p>
-                </div>
-              )}
-
               {/* Buy Section */}
-              <div className="mb-8">
+              <div className="mb-6">
                 <label className="block text-white font-semibold mb-2 text-sm sm:text-base">
-                  Buy Tokens
+                  Buy Tokens (SOL)
                 </label>
                 <div className="flex gap-2 sm:gap-3">
                   <input
@@ -387,13 +405,7 @@ export default function TokenPage() {
                   </button>
                 </div>
                 <p className="text-gray-400 text-xs sm:text-sm mt-2">
-                  ~
-                  {(
-                    ((parseFloat(buyAmount) * 0.99) / 81) *
-                    800000000 /
-                    1000000
-                  ).toFixed(2)}
-                  M tokens
+                  ~{((parseFloat(buyAmount) * 0.99 / 81) * 800000000 / 1000000).toFixed(2)}M tokens
                 </p>
               </div>
 
@@ -414,39 +426,18 @@ export default function TokenPage() {
                   />
                   <button
                     onClick={handleSell}
-                    disabled={
-                      trading || !connected || !token.isActive || !sellAmount
-                    }
+                    disabled={trading || !connected || parseFloat(sellAmount) <= 0 || parseFloat(sellAmount) > (userTokenBalance || 0)}
                     className="bg-red-500 hover:bg-red-600 disabled:bg-gray-600 text-white font-bold px-4 sm:px-8 py-2 sm:py-3 rounded-lg transition text-sm sm:text-base whitespace-nowrap"
                   >
                     {trading ? 'Selling...' : 'Sell'}
                   </button>
                 </div>
-                <p className="text-gray-400 text-xs sm:text-sm mt-2">
-                  {sellAmount && parseFloat(sellAmount) > 0
-                    ? `~${(
-                        ((parseFloat(sellAmount) / 800000000) * 81) *
-                        0.99
-                      ).toFixed(4)} SOL`
-                    : '1M tokens = 0.0001 SOL'}
-                </p>
-              </div>
-
-              {!connected && (
-                <div className="mt-6 bg-yellow-400/10 border border-yellow-400/30 rounded-lg p-4">
-                  <p className="text-yellow-400 text-xs sm:text-sm">
-                    Connect your wallet to trade
+                {userTokenBalance !== null && (
+                  <p className="text-gray-400 text-xs sm:text-sm mt-2">
+                    You have: {userTokenBalance.toFixed(2)} {token.symbol}
                   </p>
-                </div>
-              )}
-            </div>
-
-            {/* TradingView Chart */}
-            <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
-              <h3 className="text-lg sm:text-xl font-bold text-white mb-4">
-                Price Chart
-              </h3>
-              <TradingViewChart data={chartData} />
+                )}
+              </div>
             </div>
           </div>
         </div>
