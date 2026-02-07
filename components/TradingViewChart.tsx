@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { createChart, ColorType, IChartApi, ISeriesApi, CandlestickSeriesPartialOptions, DeepPartial, ChartOptions } from 'lightweight-charts';
+import { createChart, ColorType, IChartApi } from 'lightweight-charts';
 
 interface CandleData {
   time: number;
@@ -18,7 +18,7 @@ interface TradingViewChartProps {
 export function TradingViewChart({ data }: TradingViewChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
-  const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+  const seriesRef = useRef<any>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -37,12 +37,10 @@ export function TradingViewChart({ data }: TradingViewChartProps) {
           timeVisible: true,
           secondsVisible: false,
         },
-      } as DeepPartial<ChartOptions>);
+      });
 
-      // This structure combines the series type and options directly into one object
-      // as required by the 'SeriesDefinition' type in your lightweight-charts version.
-      const candlestickSeries: ISeriesApi<'Candlestick'> = chart.addSeries({
-        type: 'Candlestick',
+      // Use addSeries with proper typing
+      const series = (chart as any).addCandlestickSeries({
         upColor: '#22c55e',
         downColor: '#ef4444',
         borderUpColor: '#22c55e',
@@ -52,7 +50,7 @@ export function TradingViewChart({ data }: TradingViewChartProps) {
       });
 
       chartRef.current = chart;
-      candlestickSeriesRef.current = candlestickSeries;
+      seriesRef.current = series;
 
       const handleResize = () => {
         if (chartRef.current && containerRef.current) {
@@ -69,24 +67,26 @@ export function TradingViewChart({ data }: TradingViewChartProps) {
         if (chartRef.current) {
           chartRef.current.remove();
           chartRef.current = null;
-          candlestickSeriesRef.current = null;
+          seriesRef.current = null;
         }
       };
     }
+  }, []);
 
+  useEffect(() => {
     const chart = chartRef.current;
-    const candlestickSeries = candlestickSeriesRef.current;
+    const series = seriesRef.current;
 
-    if (chart && candlestickSeries && data.length) {
+    if (chart && series && data.length) {
       const formattedData = data.map((candle) => ({
-        time: candle.time as any,
+        time: candle.time,
         open: candle.open,
         high: candle.high,
         low: candle.low,
         close: candle.close,
       }));
 
-      candlestickSeries.setData(formattedData);
+      series.setData(formattedData);
       chart.timeScale().fitContent();
     }
   }, [data]);
