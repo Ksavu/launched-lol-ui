@@ -7,7 +7,7 @@ const TOKEN_FACTORY_PROGRAM_ID = new PublicKey('7F4JYKAEs7VhVd9P8E1wHhd8aiwtKYeo
 const INITIALIZE_CURVE_DISCRIMINATOR = Buffer.from([170, 84, 186, 253, 131, 149, 95, 213]);
 const BUY_TOKENS_DISCRIMINATOR = Buffer.from([189, 21, 230, 133, 247, 2, 110, 42]);
 const SELL_TOKENS_DISCRIMINATOR = Buffer.from([114, 242, 25, 12, 62, 126, 92, 2]);
-const DEV_BUY_DISCRIMINATOR = Buffer.from([195, 220, 253, 89, 163, 75, 172, 209]);
+const DEV_BUY_DISCRIMINATOR = Buffer.from([204, 237, 9, 67, 164, 234, 146, 78]);
 
 export type BondingCurveState = {
   tokensSold: number;

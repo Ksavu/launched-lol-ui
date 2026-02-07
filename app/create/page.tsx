@@ -136,19 +136,31 @@ const bondingCurveTx = await initializeBondingCurve(
 
 console.log('✅ Bonding curve initialized!', bondingCurveTx);
 
-// Step 5: Optional dev buy
+// Step 5: Optional dev buy (during countdown if delay > 0)
 let buyTx = null;
 if (formData.devBuyAmount > 0) {
-  console.log('💰 Buying initial supply:', formData.devBuyAmount, 'SOL');
+  console.log('💰 Dev buying initial supply:', formData.devBuyAmount, 'SOL');
   
-  const { buyTokens } = await import('../../lib/bonding-curve-clientClaude');
-  
-  buyTx = await buyTokens(
-    connection,
-    wallet,
-    tokenResult.mint,
-    formData.devBuyAmount
-  );
+  // Use devBuy if there's a launch delay, otherwise use regular buyTokens
+  if (formData.launchDelay > 0) {
+    const { devBuy } = await import('../../lib/bonding-curve-client');
+    
+    buyTx = await devBuy(
+      connection,
+      wallet,
+      tokenResult.mint,
+      formData.devBuyAmount
+    );
+  } else {
+    const { buyTokens } = await import('../../lib/bonding-curve-client');
+    
+    buyTx = await buyTokens(
+      connection,
+      wallet,
+      tokenResult.mint,
+      formData.devBuyAmount
+    );
+  }
   
   console.log('✅ Dev bought tokens!', buyTx);
 }
