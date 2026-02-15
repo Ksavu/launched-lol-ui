@@ -4,12 +4,6 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { Header } from '../../../components/Header';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-'use client';
-
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import { Header } from '../../../components/Header';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import Image from 'next/image';
 import { buyTokens, sellTokens } from '../../../lib/bonding-curve-client';
 import { getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from '@solana/spl-token';
@@ -96,7 +90,7 @@ export default function TokenPage() {
         const holders = response.filter(account => {
           try {
             const amount = account.account.data.readBigUInt64LE(64);
-            return amount > 0n;
+            return amount > 0;
           } catch {
             return false;
           }
@@ -695,7 +689,7 @@ export default function TokenPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-yellow-400 hover:text-yellow-300 text-sm transition"
-                        >
+                        <a>
                           View TX →
                         </a>
                         <p className="text-gray-500 text-xs mt-1">
