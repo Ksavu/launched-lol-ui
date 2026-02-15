@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useRef } from 'react';
+import { createChart, ColorType } from 'lightweight-charts';
 
 interface CandleData {
   time: number;
@@ -8,6 +9,7 @@ interface CandleData {
   high: number;
   low: number;
   close: number;
+  volume?: number;
 }
 
 interface TradingViewChartProps {
@@ -15,82 +17,105 @@ interface TradingViewChartProps {
 }
 
 export function TradingViewChart({ data }: TradingViewChartProps) {
-  const chartData = useMemo(() => {
-    if (!data.length) return null;
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<any>(null);
+  const candlestickSeriesRef = useRef<any>(null);
 
-    const prices = data.map(d => d.close);
-    const minPrice = Math.min(...prices);
-    const maxPrice = Math.max(...prices);
-    const priceRange = maxPrice - minPrice || 1;
+  useEffect(() => {
+    if (!chartContainerRef.current) return;
 
-    const width = 100;
-    const height = 100;
-    const padding = 5;
+    // Create chart
+    const chart = createChart(chartContainerRef.current, {
+      layout: {
+        background: { color: '#000000' },
+        textColor: '#9ca3af',
+      },
+      grid: {
+        vertLines: { color: '#1f2937' },
+        horzLines: { color: '#1f2937' },
+      },
+      width: chartContainerRef.current.clientWidth,
+      height: 400,
+      timeScale: {
+        timeVisible: true,
+        secondsVisible: false,
+        borderColor: '#374151',
+      },
+      rightPriceScale: {
+        borderColor: '#374151',
+      },
+      crosshair: {
+        mode: 1,
+        vertLine: {
+          width: 1,
+          color: '#6b7280',
+          style: 3,
+        },
+        horzLine: {
+          width: 1,
+          color: '#6b7280',
+          style: 3,
+        },
+      },
+    });
 
-    const points = data.map((d, i) => {
-      const x = (i / (data.length - 1)) * (width - 2 * padding) + padding;
-      const y = height - padding - ((d.close - minPrice) / priceRange) * (height - 2 * padding);
-      return `${x},${y}`;
-    }).join(' ');
+    chartRef.current = chart;
 
-    return { points, minPrice, maxPrice };
+    // Create candlestick series
+    const candlestickSeries = chart.addCandlestickSeries({
+      upColor: '#10b981',
+      downColor: '#ef4444',
+      borderVisible: false,
+      wickUpColor: '#10b981',
+      wickDownColor: '#ef4444',
+    });
+
+    candlestickSeriesRef.current = candlestickSeries;
+
+    // Handle resize
+    const handleResize = () => {
+      if (chartContainerRef.current && chartRef.current) {
+        chartRef.current.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+        });
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (chartRef.current) {
+        chartRef.current.remove();
+      }
+    };
+  }, []);
+
+  // Update data when it changes
+  useEffect(() => {
+    if (candlestickSeriesRef.current && data.length > 0) {
+      candlestickSeriesRef.current.setData(data);
+      
+      // Fit content
+      if (chartRef.current) {
+        chartRef.current.timeScale().fitContent();
+      }
+    }
   }, [data]);
 
-  if (!chartData) {
+  // Show message if no data
+  if (data.length === 0) {
     return (
-      <div className="w-full h-[400px] bg-gray-800 rounded-xl flex items-center justify-center">
-        <p className="text-gray-400">No chart data available</p>
+      <div className="w-full h-[400px] flex items-center justify-center bg-black border border-gray-800 rounded-lg">
+        <div className="text-center">
+          <p className="text-gray-400 text-lg mb-2">📈 No trading data yet</p>
+          <p className="text-gray-500 text-sm">Chart will appear after first trade</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full h-[400px] bg-gray-900 rounded-xl p-4">
-      <div className="flex justify-between mb-2 text-sm">
-        <span className="text-gray-400">Price Chart</span>
-        <span className="text-yellow-400 font-bold">
-          ${chartData.maxPrice.toFixed(6)}
-        </span>
-      </div>
-      
-      <svg 
-        viewBox="0 0 100 100" 
-        preserveAspectRatio="none"
-        className="w-full h-full"
-      >
-        {/* Grid lines */}
-        <line x1="0" y1="25" x2="100" y2="25" stroke="#2a2a2a" strokeWidth="0.2" />
-        <line x1="0" y1="50" x2="100" y2="50" stroke="#2a2a2a" strokeWidth="0.2" />
-        <line x1="0" y1="75" x2="100" y2="75" stroke="#2a2a2a" strokeWidth="0.2" />
-        
-        {/* Area gradient */}
-        <defs>
-          <linearGradient id="priceGradient" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="rgba(250, 204, 21, 0.4)" />
-            <stop offset="100%" stopColor="rgba(250, 204, 21, 0)" />
-          </linearGradient>
-        </defs>
-        
-        {/* Area under line */}
-        <polygon
-          points={`5,95 ${chartData.points} 95,95`}
-          fill="url(#priceGradient)"
-        />
-        
-        {/* Price line */}
-        <polyline
-          points={chartData.points}
-          fill="none"
-          stroke="#FACC15"
-          strokeWidth="0.5"
-          vectorEffect="non-scaling-stroke"
-        />
-      </svg>
-      
-      <div className="flex justify-between mt-2 text-xs text-gray-400">
-        <span>${chartData.minPrice.toFixed(6)}</span>
-        <span>{data.length} data points</span>
-      </div>
-    </div>
+    <div ref={chartContainerRef} className="w-full rounded-lg overflow-hidden border border-gray-800" />
   );
 }

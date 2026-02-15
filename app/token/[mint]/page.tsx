@@ -19,10 +19,12 @@ interface TokenData {
   description: string;
   creator: string;
   bondingCurve: string;
+  bondingCurveStatus: 'valid' | 'corrupted' | 'not_found'; // ← NEW
   solCollected: number;
   tokensSold: number;
   progress: number;
   isActive: boolean;
+  graduated: boolean;
   marketCap: number;
 }
 
@@ -108,25 +110,41 @@ export default function TokenPage() {
   // Fetch user token balance
   useEffect(() => {
     const fetchUserTokenBalance = async () => {
-      if (!publicKey || !token || !connection) {
-        setUserTokenBalance(null);
-        return;
-      }
+  if (!publicKey || !token || !connection) {
+    setUserTokenBalance(null);
+    return;
+  }
 
-      try {
-        const mintPublicKey = new PublicKey(token.address);
-        const associatedTokenAccount = getAssociatedTokenAddressSync(
-          mintPublicKey,
-          publicKey
-        );
+  try {
+    const mintPublicKey = new PublicKey(token.address);
+    const associatedTokenAccount = getAssociatedTokenAddressSync(
+      mintPublicKey,
+      publicKey
+    );
 
-        const tokenAccountInfo = await connection.getTokenAccountBalance(associatedTokenAccount);
-        setUserTokenBalance(tokenAccountInfo.value.uiAmount);
-      } catch (error) {
-        console.error("Error fetching user token balance:", error);
-        setUserTokenBalance(0);
-      }
-    };
+    // Check if the account exists first
+    const accountInfo = await connection.getAccountInfo(associatedTokenAccount);
+    
+    if (!accountInfo) {
+      // Account doesn't exist yet - balance is 0
+      setUserTokenBalance(0);
+      return;
+    }
+
+    // Account exists, get balance
+    const tokenAccountInfo = await connection.getTokenAccountBalance(associatedTokenAccount);
+    setUserTokenBalance(tokenAccountInfo.value.uiAmount);
+    
+  } catch (error: any) {
+    // Handle specific error for account not found
+    if (error.message?.includes('could not find account') || error.toString().includes('Invalid param')) {
+      setUserTokenBalance(0);
+    } else {
+      console.error("Error fetching user token balance:", error);
+      setUserTokenBalance(0);
+    }
+  }
+};
 
     fetchUserTokenBalance();
     const interval = setInterval(fetchUserTokenBalance, 10000); // Refresh every 10 seconds
@@ -134,120 +152,139 @@ export default function TokenPage() {
     return () => clearInterval(interval);
   }, [publicKey, token, connection]);
 
-  // Fetch initial token data
-  useEffect(() => {
-    const fetchTokenData = async () => {
-      try {
-        const response = await fetch('/api/tokens');
-        const data = await response.json();
-        const foundToken = data.tokens.find(
-          (t: TokenData) => t.address === mint
-        );
-        setToken(foundToken || null);
+  // Fetch initial token data AND trades
+useEffect(() => {
+  const fetchTokenData = async () => {
+    try {
+      // Fetch token data
+      const response = await fetch(`/api/tokens/${mint}`);
+      if (!response.ok) throw new Error('Token not found');
+      const data = await response.json();
+      setToken(data.token || null);
 
-        // Initialize chart with mock data
-        if (foundToken) {
-          const mockChartData: CandleData[] = [];
-          let basePrice = foundToken.solCollected / (foundToken.tokensSold || 1);
-          const now = Math.floor(Date.now() / 1000);
-
-          for (let i = 50; i > 0; i--) {
-            const variation = (Math.random() - 0.5) * basePrice * 0.1;
-            const open = basePrice + variation;
-            const close = basePrice + (Math.random() - 0.5) * basePrice * 0.1;
-
-            mockChartData.push({
-              time: now - i * 60,
-              open,
-              high: Math.max(open, close) * 1.02,
-              low: Math.min(open, close) * 0.98,
-              close,
-            });
-
-            basePrice = close;
+      // Fetch real trade history
+      if (data.token) {
+        try {
+          const tradesResponse = await fetch(`/api/trades/${mint}`);
+          const tradesData = await tradesResponse.json();
+          
+          if (tradesData.trades && tradesData.trades.length > 0) {
+            console.log(`📊 Found ${tradesData.trades.length} trades`);
+            
+            // Build candles from trades
+            const { buildCandles, fillCandleGaps } = await import('../../../lib/candle-builder');
+            
+            let candles = buildCandles(tradesData.trades, 60); // 1-minute candles
+            candles = fillCandleGaps(candles, 60);
+            
+            setChartData(candles);
+            console.log(`📈 Built ${candles.length} candles`);
+          } else {
+            console.log('No trades yet - chart will show after first trade');
+            setChartData([]);
           }
-
-          setChartData(mockChartData);
+        } catch (tradeError) {
+          console.error('Error fetching trades:', tradeError);
+          setChartData([]);
         }
-      } catch (error) {
-        console.error('Error fetching token:', error);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching token:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchTokenData();
-  }, [mint]);
+  fetchTokenData();
+}, [mint]);
 
   const handleBuy = async () => {
-    if (!connected || !publicKey || !token) {
-      alert('Please connect wallet!');
-      return;
+  if (!connected || !publicKey || !token) {
+    alert('Please connect wallet!');
+    return;
+  }
+
+  setTrading(true);
+  try {
+    const wallet = { publicKey, signTransaction, signAllTransactions };
+    const tx = await buyTokens(
+      connection,
+      wallet,
+      token.address,
+      parseFloat(buyAmount)
+    );
+
+    alert(
+      `✅ Success!\n\nBought tokens!\n\nTX: https://solscan.io/tx/${tx}?cluster=devnet`
+    );
+
+    // REFETCH token data
+    const response = await fetch(`/api/tokens/${mint}`);
+    const data = await response.json();
+    if (data.token) setToken(data.token);
+    
+    // REFETCH trades and update chart
+    const tradesResponse = await fetch(`/api/trades/${mint}`);
+    const tradesData = await tradesResponse.json();
+    
+    if (tradesData.trades && tradesData.trades.length > 0) {
+      const { buildCandles, fillCandleGaps } = await import('../../../lib/candle-builder');
+      let candles = buildCandles(tradesData.trades, 60);
+      candles = fillCandleGaps(candles, 60);
+      setChartData(candles);
     }
+    
+  } catch (error) {
+    console.error(error);
+    alert(`Error: ${error}`);
+  } finally {
+    setTrading(false);
+  }
+};
 
-    setTrading(true);
-    try {
-      const wallet = { publicKey, signTransaction, signAllTransactions };
-      const tx = await buyTokens(
-        connection,
-        wallet,
-        token.address,
-        parseFloat(buyAmount)
-      );
+const handleSell = async () => {
+  if (!connected || !publicKey || !token) {
+    alert('Please connect wallet!');
+    return;
+  }
 
-      alert(
-        `✅ Success!\n\nBought tokens!\n\nTX: https://solscan.io/tx/${tx}?cluster=devnet`
-      );
+  setTrading(true);
+  try {
+    const wallet = { publicKey, signTransaction, signAllTransactions };
+    const tx = await sellTokens(
+      connection,
+      wallet,
+      token.address,
+      parseFloat(sellAmount)
+    );
 
-      // Refetch token data
-      const response = await fetch('/api/tokens');
-      const data = await response.json();
-      const updatedToken = data.tokens.find(
-        (t: TokenData) => t.address === mint
-      );
-      if (updatedToken) setToken(updatedToken);
-    } catch (error) {
-      console.error(error);
-      alert(`Error: ${error}`);
-    } finally {
-      setTrading(false);
+    alert(
+      `✅ Success!\n\nSold tokens!\n\nTX: https://solscan.io/tx/${tx}?cluster=devnet`
+    );
+
+    // REFETCH token data
+    const response = await fetch(`/api/tokens/${mint}`);
+    const data = await response.json();
+    if (data.token) setToken(data.token);
+    
+    // REFETCH trades and update chart
+    const tradesResponse = await fetch(`/api/trades/${mint}`);
+    const tradesData = await tradesResponse.json();
+    
+    if (tradesData.trades && tradesData.trades.length > 0) {
+      const { buildCandles, fillCandleGaps } = await import('../../../lib/candle-builder');
+      let candles = buildCandles(tradesData.trades, 60);
+      candles = fillCandleGaps(candles, 60);
+      setChartData(candles);
     }
-  };
-
-  const handleSell = async () => {
-    if (!connected || !publicKey || !token) {
-      alert('Please connect wallet!');
-      return;
-    }
-
-    setTrading(true);
-    try {
-      const wallet = { publicKey, signTransaction, signAllTransactions };
-      const tx = await sellTokens(
-        connection,
-        wallet,
-        token.address,
-        parseFloat(sellAmount)
-      );
-
-      alert(
-        `✅ Success!\n\nSold tokens!\n\nTX: https://solscan.io/tx/${tx}?cluster=devnet`
-      );
-
-      // Refetch token data
-      const response = await fetch('/api/tokens');
-      const data = await response.json();
-      const updatedToken = data.tokens.find(
-        (t: TokenData) => t.address === mint
-      );
-      if (updatedToken) setToken(updatedToken);
-    } catch (error: any) {
-      console.error(error);
-      alert(`Error: ${error.message || error.toString()}`);
-    } finally {
-      setTrading(false);
-    }
-  };
+    
+  } catch (error: any) {
+    console.error(error);
+    alert(`Error: ${error.message || error.toString()}`);
+  } finally {
+    setTrading(false);
+  }
+};
 
   if (loading) {
     return (
@@ -335,33 +372,45 @@ export default function TokenPage() {
                   </span>
                 </div>
 
-                <div className="flex justify-between text-sm sm:text-base">
-                  <span className="text-gray-400">Status</span>
-                  <span
-                    className={`font-semibold ${
-                      token.isActive ? 'text-green-400' : 'text-yellow-400'
-                    }`}
-                  >
-                    {token.isActive ? '🟢 Active' : '🎓 Graduated'}
-                  </span>
-                </div>
-              </div>
+{/* Status - UPDATED to use bondingCurveStatus */}
+<div className="flex justify-between text-sm sm:text-base">
+  <span className="text-gray-400">Status</span>
+  <span
+    className={`font-semibold ${
+      token.bondingCurveStatus === 'not_found'
+        ? 'text-gray-400'
+        : token.bondingCurveStatus === 'corrupted'
+        ? 'text-red-400'
+        : token.isActive
+        ? 'text-green-400'
+        : 'text-yellow-400'
+    }`}
+  >
+    {token.bondingCurveStatus === 'not_found' && '⏳ Not Initialized'}
+    {token.bondingCurveStatus === 'corrupted' && '⚠️ Corrupted'}
+    {token.bondingCurveStatus === 'valid' && token.isActive && '🟢 Active'}
+    {token.bondingCurveStatus === 'valid' && !token.isActive && token.graduated && '🎓 Graduated'}
+    {token.bondingCurveStatus === 'valid' && !token.isActive && !token.graduated && '⏸️ Paused'}
+  </span>
+</div>
 
-              {/* Progress Bar */}
-              <div className="mt-6">
-                <div className="flex justify-between text-xs sm:text-sm mb-2">
-                  <span className="text-gray-400">Progress to 81 SOL</span>
-                  <span className="text-white font-semibold">
-                    {token.progress.toFixed(2)}%
-                  </span>
-                </div>
-                <div className="w-full bg-gray-800 rounded-full h-3">
-                  <div
-                    className="bg-yellow-400 h-3 rounded-full transition-all"
-                    style={{ width: `${token.progress}%` }}
-                  />
-                </div>
-              </div>
+{/* Progress Bar - Only show for valid bonding curves */}
+{token.bondingCurveStatus === 'valid' && (
+  <div className="mt-6">
+    <div className="flex justify-between text-xs sm:text-sm mb-2">
+      <span className="text-gray-400">Progress to 81 SOL</span>
+      <span className="text-white font-semibold">
+        {token.progress.toFixed(2)}%
+      </span>
+    </div>
+    <div className="w-full bg-gray-800 rounded-full h-3">
+      <div
+        className="bg-yellow-400 h-3 rounded-full transition-all"
+        style={{ width: `${token.progress}%` }}
+      />
+    </div>
+  </div>
+)}
             </div>
           </div>
 
@@ -382,66 +431,114 @@ export default function TokenPage() {
               </h2>
 
               {/* Buy Section */}
-              <div className="mb-6">
-                <label className="block text-white font-semibold mb-2 text-sm sm:text-base">
-                  Buy Tokens (SOL)
-                </label>
-                <div className="flex gap-2 sm:gap-3">
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0.01"
-                    value={buyAmount}
-                    onChange={(e) => setBuyAmount(e.target.value)}
-                    className="flex-1 bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white outline-none text-sm sm:text-base"
-                    placeholder="SOL"
-                  />
-                  <button
-                    onClick={handleBuy}
-                    disabled={trading || !connected || !token.isActive}
-                    className="bg-green-500 hover:bg-green-600 disabled:bg-gray-600 text-white font-bold px-4 sm:px-8 py-2 sm:py-3 rounded-lg transition text-sm sm:text-base whitespace-nowrap"
-                  >
-                    {trading ? 'Buying...' : 'Buy'}
-                  </button>
-                </div>
-                <p className="text-gray-400 text-xs sm:text-sm mt-2">
-                  ~{((parseFloat(buyAmount) * 0.99 / 81) * 800000000 / 1000000).toFixed(2)}M tokens
-                </p>
-              </div>
+              {/* Buy Section - UPDATED button disabled logic */}
+<div className="mb-6">
+  <label className="block text-white font-semibold mb-2 text-sm sm:text-base">
+    Buy Tokens (SOL)
+  </label>
+  <div className="flex gap-2 sm:gap-3">
+    <input
+      type="number"
+      step="0.1"
+      min="0.01"
+      value={buyAmount}
+      onChange={(e) => setBuyAmount(e.target.value)}
+      className="flex-1 bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white outline-none text-sm sm:text-base"
+      placeholder="SOL"
+      disabled={token.bondingCurveStatus !== 'valid'} // Disable input if not valid
+    />
+    <button
+      onClick={handleBuy}
+      disabled={
+        trading || 
+        !connected || 
+        token.bondingCurveStatus !== 'valid' || // ← Only enable for valid curves
+        !token.isActive
+      }
+      className={`font-bold px-4 sm:px-8 py-2 sm:py-3 rounded-lg transition text-sm sm:text-base whitespace-nowrap ${
+        token.bondingCurveStatus === 'valid' && token.isActive
+          ? 'bg-green-500 hover:bg-green-600'
+          : 'bg-gray-600 cursor-not-allowed'
+      } text-white`}
+    >
+      {token.bondingCurveStatus !== 'valid' 
+        ? 'Not Available' 
+        : !token.isActive
+        ? 'Trading Paused'
+        : trading 
+          ? 'Buying...' 
+          : 'Buy'}
+    </button>
+  </div>
+  {token.bondingCurveStatus === 'valid' && (
+    <p className="text-gray-400 text-xs sm:text-sm mt-2">
+      {(() => {
+      const solAfterFee = parseFloat(buyAmount) * 0.99;
+      const VIRTUAL_SOL = 30;
+      const VIRTUAL_TOKENS = 1040000000;
+      const k = VIRTUAL_SOL * VIRTUAL_TOKENS;
+      const newVirtualSol = VIRTUAL_SOL + solAfterFee;
+      const newVirtualTokens = k / newVirtualSol;
+      const tokensReceived = VIRTUAL_TOKENS - newVirtualTokens;
+    
+      return `~${(tokensReceived / 1000000).toFixed(2)}M tokens`;
+      })()}
+    </p>
+  )}
+</div>
 
-              {/* Sell Section */}
-              <div>
-                <label className="block text-white font-semibold mb-2 text-sm sm:text-base">
-                  Sell Tokens
-                </label>
-                <div className="flex gap-2 sm:gap-3">
-                  <input
-                    type="number"
-                    step="100000"
-                    min="100000"
-                    value={sellAmount}
-                    onChange={(e) => setSellAmount(e.target.value)}
-                    className="flex-1 bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white outline-none text-sm sm:text-base"
-                    placeholder="Tokens"
-                  />
-                  <button
-                    onClick={handleSell}
-                    disabled={trading || !connected || parseFloat(sellAmount) <= 0 || parseFloat(sellAmount) > (userTokenBalance || 0)}
-                    className="bg-red-500 hover:bg-red-600 disabled:bg-gray-600 text-white font-bold px-4 sm:px-8 py-2 sm:py-3 rounded-lg transition text-sm sm:text-base whitespace-nowrap"
-                  >
-                    {trading ? 'Selling...' : 'Sell'}
-                  </button>
-                </div>
-                {userTokenBalance !== null && (
-                  <p className="text-gray-400 text-xs sm:text-sm mt-2">
-                    You have: {userTokenBalance.toFixed(2)} {token.symbol}
-                  </p>
-                )}
-              </div>
+{/* Sell Section - UPDATED button disabled logic */}
+<div>
+  <label className="block text-white font-semibold mb-2 text-sm sm:text-base">
+    Sell Tokens
+  </label>
+  <div className="flex gap-2 sm:gap-3">
+    <input
+      type="number"
+      step="100000"
+      min="100000"
+      value={sellAmount}
+      onChange={(e) => setSellAmount(e.target.value)}
+      className="flex-1 bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white outline-none text-sm sm:text-base"
+      placeholder="Tokens"
+      disabled={token.bondingCurveStatus !== 'valid'} // Disable input if not valid
+    />
+    <button
+      onClick={handleSell}
+      disabled={
+        trading || 
+        !connected || 
+        token.bondingCurveStatus !== 'valid' || // ← Only enable for valid curves
+        !token.isActive ||
+        parseFloat(sellAmount) <= 0 || 
+        parseFloat(sellAmount) > (userTokenBalance || 0)
+      }
+      className={`font-bold px-4 sm:px-8 py-2 sm:py-3 rounded-lg transition text-sm sm:text-base whitespace-nowrap ${
+        token.bondingCurveStatus === 'valid' && token.isActive
+          ? 'bg-red-500 hover:bg-red-600'
+          : 'bg-gray-600 cursor-not-allowed'
+      } text-white`}
+    >
+      {token.bondingCurveStatus !== 'valid' 
+        ? 'Not Available' 
+        : !token.isActive
+        ? 'Trading Paused'
+        : trading 
+          ? 'Selling...' 
+          : 'Sell'}
+    </button>
+  </div>
+  {userTokenBalance !== null && token.bondingCurveStatus === 'valid' && (
+    <p className="text-gray-400 text-xs sm:text-sm mt-2">
+      You have: {userTokenBalance.toFixed(2)} {token.symbol}
+    </p>
+  )}
+</div>
             </div>
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }

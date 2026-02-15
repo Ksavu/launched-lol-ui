@@ -3,13 +3,12 @@ import { Connection, PublicKey } from '@solana/web3.js';
 
 const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
 const TOKEN_FACTORY_PROGRAM_ID = new PublicKey('7F4JYKAEs7VhVd9P8E1wHhd8aiwtKYeo1tTxabDqpCvX');
-const BONDING_CURVE_PROGRAM_ID = new PublicKey('94fy3DtZ6fKHg3P5wTkdC8CHkkzWMtUDgaTtLHsqycS8');
+const BONDING_CURVE_PROGRAM_ID = new PublicKey('21ACVywCBCgrgAx8HpLJM6mJC8pxMzvvi58in5Xv7qej');
 
 export async function GET() {
   try {
     console.log('🔍 Fetching all token metadata accounts...');
     
-    // Fetch all TokenMetadata accounts
     const accounts = await connection.getProgramAccounts(TOKEN_FACTORY_PROGRAM_ID, {
       filters: [
         {
@@ -21,7 +20,7 @@ export async function GET() {
     console.log(`✅ Found ${accounts.length} tokens`);
     
     const tokens = await Promise.all(
-      accounts.map(async ({ pubkey, account }) => {
+      accounts.map(async ({ account }) => {
         try {
           const data = account.data;
           
@@ -43,12 +42,13 @@ export async function GET() {
           const uriLength = data.readUInt32LE(uriOffset);
           const uri = data.slice(uriOffset + 4, uriOffset + 4 + uriLength).toString('utf8');
 
-          // Parse tier
+          // Parse tier (isPremium) - byte after uri
           const tierOffset = uriOffset + 4 + uriLength;
           const tier = data[tierOffset];
+          const isPremium = tier === 1; // 0 = free, 1 = premium
 
-          // Parse category
-          const category = data[tierOffset + 1];
+          // Parse category (one byte after tier)
+          const category = data[uriOffset + 1];
           
           // Get bonding curve data
           const [bondingCurve] = PublicKey.findProgramAddressSync(
@@ -59,29 +59,34 @@ export async function GET() {
           let solCollected = 0;
           let tokensSold = 0;
           let isActive = false;
+          let graduated = false;
+          let bondingCurveStatus = 'not_found';
           
           try {
             const bondingCurveAccount = await connection.getAccountInfo(bondingCurve);
             if (bondingCurveAccount) {
               const curveData = bondingCurveAccount.data;
-      
-              // CORRECT OFFSETS for new BondingCurve struct
-              // discriminator: 0-8
-              // mint: 8-40
-              // creator: 40-72
-              // treasury: 72-104
-              // total_supply: 104-112
-              // tokens_sold: 112-120 ← HERE
-              // sol_collected: 120-128 ← HERE
-              // ...
-              // is_active: 168-169 ← HERE
               
-              tokensSold = Number(curveData.readBigUInt64LE(112));
-              solCollected = Number(curveData.readBigUInt64LE(120));
-              isActive = curveData[168] === 1;
+              // Check discriminator
+              const expectedDiscriminator = Buffer.from([23, 183, 248, 55, 96, 216, 172, 96]);
+              const actualDiscriminator = curveData.slice(0, 8);
+              
+              if (actualDiscriminator.equals(expectedDiscriminator)) {
+                bondingCurveStatus = 'valid';
+                
+                tokensSold = Number(curveData.readBigUInt64LE(112)) / 1_000_000;
+                solCollected = Number(curveData.readBigUInt64LE(120)) / 1_000_000_000;
+                
+                const rawSolCollected = Number(curveData.readBigUInt64LE(120));
+                const isGraduated = rawSolCollected >= 81_000_000_000;
+                const isActiveFlag = curveData[168] === 1;
+                
+                graduated = isGraduated;
+                isActive = !isGraduated && isActiveFlag;
+              }
             }
-          } catch (error) {
-            console.log(`No bonding curve for ${mint.toBase58()}`);
+          } catch (err) {
+            console.error('Error parsing curve data:', err);
           }
           
           // Fetch metadata from IPFS
@@ -98,6 +103,36 @@ export async function GET() {
             console.log(`Failed to fetch metadata for ${name}`);
           }
           
+          // Fetch SOL price
+          let solPrice = 200; // default fallback
+              try {
+          const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+          const priceData = await priceResponse.json();
+                solPrice = priceData.solana.usd;
+          } catch (e) {
+                console.log('Failed to fetch SOL price, using $200');
+          }
+          
+          // Calculate market cap
+          const VIRTUAL_SOL = 30_000_000_000;
+          const VIRTUAL_TOKENS = 1_040_000_000_000_000;
+          const TOTAL_SUPPLY = 1_000_000_000_000_000;
+
+          let marketCap = 0;
+          if (bondingCurveStatus === 'valid') {
+            const solCollectedLamports = solCollected; // Already in lamports from line 97
+            const tokensSoldLamports = tokensSold; // Already in lamports from line 96
+  
+            const currentVirtualSol = VIRTUAL_SOL + solCollectedLamports;
+            const currentVirtualTokens = VIRTUAL_TOKENS - tokensSoldLamports;
+  
+            const pricePerToken = currentVirtualSol / currentVirtualTokens;
+            const marketCapLamports = pricePerToken * TOTAL_SUPPLY;
+            const marketCapSOL = marketCapLamports / 1_000_000_000;
+  
+                  marketCap = marketCapSOL * solPrice;
+          }
+
           return {
             address: mint.toBase58(),
             name,
@@ -107,13 +142,17 @@ export async function GET() {
             description,
             creator: creator.toBase58(),
             bondingCurve: bondingCurve.toBase58(),
-            solCollected: solCollected / 1_000_000_000, // Convert to SOL
-            tokensSold: tokensSold / 1_000_000, // Convert to whole tokens
-            progress: (solCollected / 81_000_000_000) * 100, // % to 81 SOL
+            bondingCurveStatus,
+            solCollected,
+            tokensSold,
+            progress: bondingCurveStatus === 'valid' ? (solCollected / 81) * 100 : 0,
             isActive,
-            marketCap: (solCollected / 1_000_000_000) * 2, // Rough estimate
+            graduated,
+            marketCap,
             category: ['meme', 'ai', 'gaming', 'defi', 'nft', 'other'][category] || 'other',
+            isPremium,
           };
+          
         } catch (error) {
           console.error('Error parsing token:', error);
           return null;
@@ -121,12 +160,13 @@ export async function GET() {
       })
     );
     
-    // Filter out nulls and sort by SOL collected
     const validTokens = tokens
-      .filter((t) => t !== null)
-      .sort((a, b) => b!.solCollected - a!.solCollected);
-    
+       .filter((t) => t !== null)
+       .filter((t) => t!.bondingCurveStatus === 'valid') // ← Only show valid bonding curves
+       .sort((a, b) => b!.solCollected - a!.solCollected);
+
     return NextResponse.json({ tokens: validTokens });
+    
   } catch (error) {
     console.error('Error fetching tokens:', error);
     return NextResponse.json({ error: 'Failed to fetch tokens' }, { status: 500 });

@@ -1,5 +1,5 @@
 {
-  "address": "94fy3DtZ6fKHg3P5wTkdC8CHkkzWMtUDgaTtLHsqycS8",
+  "address": "21ACVywCBCgrgAx8HpLJM6mJC8pxMzvvi58in5Xv7qej",
   "metadata": {
     "name": "bonding_curve",
     "version": "0.1.0",
@@ -21,6 +21,11 @@
       ],
       "accounts": [
         {
+          "name": "buyer",
+          "writable": true,
+          "signer": true
+        },
+        {
           "name": "bonding_curve",
           "writable": true,
           "pda": {
@@ -45,24 +50,251 @@
               },
               {
                 "kind": "account",
-                "path": "bonding_curve.mint",
-                "account": "BondingCurve"
+                "path": "token_mint"
               }
             ]
           }
         },
         {
-          "name": "treasury",
-          "writable": true
+          "name": "token_mint",
+          "writable": true,
+          "relations": [
+            "bonding_curve"
+          ]
         },
         {
-          "name": "buyer",
+          "name": "buyer_token_account",
           "writable": true,
-          "signer": true
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "buyer"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "token_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "bonding_curve_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "bonding_curve"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "token_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "user_balance",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  45,
+                  98,
+                  97,
+                  108,
+                  97,
+                  110,
+                  99,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "bonding_curve"
+              },
+              {
+                "kind": "account",
+                "path": "buyer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "platform_wallet",
+          "writable": true,
+          "address": "GtcpcvS3k24MA3Yhs6bAd1spkdjYmx82KqRxSk6pPWhE"
         },
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
         }
       ],
       "args": [
@@ -71,6 +303,156 @@
           "type": "u64"
         }
       ]
+    },
+    {
+      "name": "close_curve",
+      "discriminator": [
+        228,
+        177,
+        198,
+        182,
+        76,
+        121,
+        111,
+        104
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "bonding_curve"
+          ]
+        },
+        {
+          "name": "bonding_curve",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  111,
+                  110,
+                  100,
+                  105,
+                  110,
+                  103,
+                  45,
+                  99,
+                  117,
+                  114,
+                  118,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "bonding_curve.token_mint",
+                "account": "BondingCurve"
+              }
+            ]
+          }
+        },
+        {
+          "name": "curve_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "bonding_curve"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "bonding_curve.token_mint",
+                "account": "BondingCurve"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
     },
     {
       "name": "dev_buy",
@@ -86,6 +468,11 @@
       ],
       "accounts": [
         {
+          "name": "buyer",
+          "writable": true,
+          "signer": true
+        },
+        {
           "name": "bonding_curve",
           "writable": true,
           "pda": {
@@ -110,24 +497,251 @@
               },
               {
                 "kind": "account",
-                "path": "bonding_curve.mint",
-                "account": "BondingCurve"
+                "path": "token_mint"
               }
             ]
           }
         },
         {
-          "name": "treasury",
-          "writable": true
+          "name": "token_mint",
+          "writable": true,
+          "relations": [
+            "bonding_curve"
+          ]
         },
         {
-          "name": "buyer",
+          "name": "buyer_token_account",
           "writable": true,
-          "signer": true
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "buyer"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "token_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "bonding_curve_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "bonding_curve"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "token_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "user_balance",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  45,
+                  98,
+                  97,
+                  108,
+                  97,
+                  110,
+                  99,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "bonding_curve"
+              },
+              {
+                "kind": "account",
+                "path": "buyer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "platform_wallet",
+          "writable": true,
+          "address": "GtcpcvS3k24MA3Yhs6bAd1spkdjYmx82KqRxSk6pPWhE"
         },
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
         }
       ],
       "args": [
@@ -136,65 +750,6 @@
           "type": "u64"
         }
       ]
-    },
-    {
-      "name": "graduate",
-      "discriminator": [
-        45,
-        235,
-        225,
-        181,
-        17,
-        218,
-        64,
-        130
-      ],
-      "accounts": [
-        {
-          "name": "bonding_curve",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  98,
-                  111,
-                  110,
-                  100,
-                  105,
-                  110,
-                  103,
-                  45,
-                  99,
-                  117,
-                  114,
-                  118,
-                  101
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "bonding_curve.mint",
-                "account": "BondingCurve"
-              }
-            ]
-          }
-        },
-        {
-          "name": "dev_wallet",
-          "writable": true
-        },
-        {
-          "name": "treasury",
-          "writable": true
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": []
     },
     {
       "name": "initialize_curve",
@@ -209,6 +764,11 @@
         213
       ],
       "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
         {
           "name": "bonding_curve",
           "writable": true,
@@ -240,13 +800,25 @@
           }
         },
         {
-          "name": "creator",
+          "name": "token_mint",
+          "writable": true
+        },
+        {
+          "name": "platform_wallet",
           "writable": true,
-          "signer": true
+          "address": "GtcpcvS3k24MA3Yhs6bAd1spkdjYmx82KqRxSk6pPWhE"
         },
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
         }
       ],
       "args": [
@@ -273,18 +845,26 @@
       ]
     },
     {
-      "name": "sell_tokens",
+      "name": "release_dev_tokens",
       "discriminator": [
-        114,
-        242,
-        25,
-        12,
-        62,
-        126,
-        92,
-        2
+        55,
+        184,
+        218,
+        165,
+        190,
+        45,
+        85,
+        42
       ],
       "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "bonding_curve"
+          ]
+        },
         {
           "name": "bonding_curve",
           "writable": true,
@@ -310,24 +890,505 @@
               },
               {
                 "kind": "account",
-                "path": "bonding_curve.mint",
-                "account": "BondingCurve"
+                "path": "token_mint"
               }
             ]
           }
         },
         {
-          "name": "treasury",
-          "writable": true
+          "name": "token_mint",
+          "writable": true,
+          "relations": [
+            "bonding_curve"
+          ]
         },
+        {
+          "name": "bonding_curve_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "bonding_curve"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "token_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "creator_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "token_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "sell_tokens",
+      "discriminator": [
+        114,
+        242,
+        25,
+        12,
+        62,
+        126,
+        92,
+        2
+      ],
+      "accounts": [
         {
           "name": "seller",
           "writable": true,
           "signer": true
         },
         {
+          "name": "bonding_curve",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  111,
+                  110,
+                  100,
+                  105,
+                  110,
+                  103,
+                  45,
+                  99,
+                  117,
+                  114,
+                  118,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "token_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_mint",
+          "writable": true,
+          "relations": [
+            "bonding_curve"
+          ]
+        },
+        {
+          "name": "seller_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "seller"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "token_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "curve_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "bonding_curve"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "token_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "user_balance",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114,
+                  45,
+                  98,
+                  97,
+                  108,
+                  97,
+                  110,
+                  99,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "bonding_curve"
+              },
+              {
+                "kind": "account",
+                "path": "seller"
+              }
+            ]
+          }
+        },
+        {
+          "name": "platform_wallet",
+          "writable": true,
+          "address": "GtcpcvS3k24MA3Yhs6bAd1spkdjYmx82KqRxSk6pPWhE"
+        },
+        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "rent",
+          "address": "SysvarRent111111111111111111111111111111111"
         }
       ],
       "args": [
@@ -351,68 +1412,111 @@
         172,
         96
       ]
+    },
+    {
+      "name": "UserBalance",
+      "discriminator": [
+        187,
+        237,
+        208,
+        146,
+        86,
+        132,
+        29,
+        191
+      ]
     }
   ],
   "errors": [
     {
       "code": 6000,
       "name": "CurveNotActive",
-      "msg": "Bonding curve is not active"
+      "msg": "The bonding curve is not active."
     },
     {
       "code": 6001,
-      "name": "TradingNotStarted",
-      "msg": "Trading has not started yet"
+      "name": "InvalidAmount",
+      "msg": "Invalid amount."
     },
     {
       "code": 6002,
-      "name": "InvalidAmount",
-      "msg": "Invalid token amount"
+      "name": "TradingNotStarted",
+      "msg": "Trading has not started yet due to launch delay."
     },
     {
       "code": 6003,
-      "name": "GraduationThresholdNotMet",
-      "msg": "Graduation threshold not met"
+      "name": "ExceedsCurveSupply",
+      "msg": "Exceeds curve supply limit."
     },
     {
       "code": 6004,
       "name": "ExceedsMaxBuy",
-      "msg": "Exceeds maximum buy limit"
+      "msg": "Exceeds maximum buy limit for anti-bot."
     },
     {
       "code": 6005,
-      "name": "ExceedsCurveSupply",
-      "msg": "Exceeds curve token supply (770M)"
+      "name": "OnlyCreator",
+      "msg": "Only the creator can perform this action."
     },
     {
       "code": 6006,
-      "name": "InsufficientLiquidity",
-      "msg": "Insufficient liquidity"
+      "name": "DevBuyWindowClosed",
+      "msg": "Dev buy window is closed."
     },
     {
       "code": 6007,
-      "name": "StillActive",
-      "msg": "Token is still active"
+      "name": "InsufficientTokens",
+      "msg": "Insufficient tokens to sell."
     },
     {
       "code": 6008,
-      "name": "InvalidLaunchDelay",
-      "msg": "Invalid launch delay (must be 0-300 seconds)"
+      "name": "NotGraduatedYet",
+      "msg": "Token has not graduated yet."
     },
     {
       "code": 6009,
-      "name": "AntiBotRequiresPremium",
-      "msg": "Anti-bot protection requires premium tier"
+      "name": "SolReservesNotEmpty",
+      "msg": "SOL reserves are not empty."
     },
     {
       "code": 6010,
-      "name": "OnlyCreator",
-      "msg": "Only the creator can call this function"
+      "name": "TokensStillInCurve",
+      "msg": "Tokens are still in the curve."
     },
     {
       "code": 6011,
-      "name": "DevBuyWindowClosed",
-      "msg": "Dev buy window has closed. Public trading has started."
+      "name": "InvalidLaunchDelay",
+      "msg": "Invalid launch delay. Must be between 0 and 300 seconds."
+    },
+    {
+      "code": 6012,
+      "name": "AntiBotRequiresPremium",
+      "msg": "Anti-bot features require a premium token."
+    },
+    {
+      "code": 6013,
+      "name": "CreatorExemptFromAntiBot",
+      "msg": "Creator is exempt from anti-bot restrictions."
+    },
+    {
+      "code": 6014,
+      "name": "DevTokensAlreadyReleased",
+      "msg": "Dev tokens have already been released."
+    },
+    {
+      "code": 6015,
+      "name": "CurveGraduated",
+      "msg": "Curve has already graduated."
+    },
+    {
+      "code": 6016,
+      "name": "GraduationThresholdNotMet",
+      "msg": "Graduation threshold not met."
+    },
+    {
+      "code": 6017,
+      "name": "InsufficientUserBalance",
+      "msg": "Insufficient user balance."
     }
   ],
   "types": [
@@ -422,11 +1526,11 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "mint",
+            "name": "creator",
             "type": "pubkey"
           },
           {
-            "name": "creator",
+            "name": "token_mint",
             "type": "pubkey"
           },
           {
@@ -478,8 +1582,12 @@
             "type": "u16"
           },
           {
-            "name": "graduation_threshold",
+            "name": "graduation_threshold_sol",
             "type": "u64"
+          },
+          {
+            "name": "graduated",
+            "type": "bool"
           },
           {
             "name": "curve_supply",
@@ -498,12 +1606,12 @@
             "type": "bool"
           },
           {
-            "name": "anti_bot_enabled",
-            "type": "bool"
-          },
-          {
             "name": "launch_delay",
             "type": "i64"
+          },
+          {
+            "name": "anti_bot_enabled",
+            "type": "bool"
           },
           {
             "name": "max_buy_initial",
@@ -515,6 +1623,34 @@
           },
           {
             "name": "dev_tokens_sold",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UserBalance",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "bonding_curve",
+            "type": "pubkey"
+          },
+          {
+            "name": "tokens_bought",
+            "type": "u64"
+          },
+          {
+            "name": "tokens_sold",
             "type": "u64"
           },
           {
