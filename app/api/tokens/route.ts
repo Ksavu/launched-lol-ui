@@ -48,7 +48,7 @@ export async function GET() {
           const isPremium = tier === 1; // 0 = free, 1 = premium
 
           // Parse category (one byte after tier)
-          const category = data[uriOffset + 1];
+          const category = data[tierOffset + 1]; // One byte after tier
           
           // Get bonding curve data
           const [bondingCurve] = PublicKey.findProgramAddressSync(
@@ -119,18 +119,19 @@ export async function GET() {
           const TOTAL_SUPPLY = 1_000_000_000_000_000;
 
           let marketCap = 0;
-          if (bondingCurveStatus === 'valid') {
-            const solCollectedLamports = solCollected; // Already in lamports from line 97
-            const tokensSoldLamports = tokensSold; // Already in lamports from line 96
-  
-            const currentVirtualSol = VIRTUAL_SOL + solCollectedLamports;
-            const currentVirtualTokens = VIRTUAL_TOKENS - tokensSoldLamports;
-  
-            const pricePerToken = currentVirtualSol / currentVirtualTokens;
-            const marketCapLamports = pricePerToken * TOTAL_SUPPLY;
-            const marketCapSOL = marketCapLamports / 1_000_000_000;
-  
-                  marketCap = marketCapSOL * solPrice;
+              if (bondingCurveStatus === 'valid') {
+          // Convert back to lamports for calculation
+          const solCollectedLamports = solCollected * 1_000_000_000; // solCollected is in SOL
+          const tokensSoldLamports = tokensSold * 1_000_000; // tokensSold is in millions
+
+          const currentVirtualSol = VIRTUAL_SOL + solCollectedLamports;
+          const currentVirtualTokens = VIRTUAL_TOKENS - tokensSoldLamports;
+
+          const pricePerToken = currentVirtualSol / currentVirtualTokens;
+          const marketCapLamports = pricePerToken * TOTAL_SUPPLY;
+          const marketCapSOL = marketCapLamports / 1_000_000_000;
+
+                marketCap = marketCapSOL * solPrice;
           }
 
           return {
