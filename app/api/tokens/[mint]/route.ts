@@ -159,7 +159,7 @@ if (bondingCurveStatus === 'valid') {
       bondingCurve: bondingCurve.toBase58(),
       bondingCurveStatus,
       solCollected: solCollected / 1_000_000_000,
-      tokensSold: tokensSold / 1_000_000,
+      tokensSold: tokensSold, // Already converted above
       progress: bondingCurveStatus === 'valid' ? (solCollected / 81_000_000_000) * 100 : 0,
       isActive: bondingCurveStatus === 'valid' && isActive && !graduated,
       graduated: bondingCurveStatus === 'valid' && graduated,
