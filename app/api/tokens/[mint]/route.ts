@@ -92,7 +92,7 @@ export async function GET(
         
         if (actualDiscriminator.equals(expectedDiscriminator)) {
           bondingCurveStatus = 'valid';
-          tokensSold = Number(curveData.readBigUInt64LE(112));
+          tokensSold = Number(curveData.readBigUInt64LE(112)) / 1_000_000; // Already in millions
           solCollected = Number(curveData.readBigUInt64LE(120));
           isActive = curveData[168] === 1;
           graduated = curveData[187] === 1;
