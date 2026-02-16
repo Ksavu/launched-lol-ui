@@ -512,6 +512,7 @@ export default function TokenPage() {
                 {/* Time Interval Selector */}
                 <div className="flex gap-2">
                   {[
+                    { label: '5s', value: 5 },
                     { label: '1m', value: 60 },
                     { label: '5m', value: 300 },
                     { label: '15m', value: 900 },
@@ -684,18 +685,18 @@ export default function TokenPage() {
                       </div>
                       
                       <div className="text-right">
-                        
+                        <a
                           href={`https://solscan.io/tx/${trade.signature}?cluster=devnet`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-yellow-400 hover:text-yellow-300 text-sm transition"
-                        <a>
-                          View TX →
+                          className="text-white hover:text-yellow-400 text-sm transition block"
+                        >
+                          View Tx →
                         </a>
                         <p className="text-gray-500 text-xs mt-1">
-                          {new Date(trade.timestamp * 1000).toLocaleTimeString()}
+                           {new Date(trade.timestamp * 1000).toLocaleTimeString()}
                         </p>
-                      </div>
+                     </div>
                     </div>
                   ))}
                 </div>

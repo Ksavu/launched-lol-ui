@@ -57,7 +57,7 @@ export async function GET(
           // Match: "Bought 33223620 tokens for 990000000 SOL (fee: 10000000)"
           const buyMatch = log.match(/Bought (\d+) tokens for (\d+) SOL \(fee: (\d+)\)/);
           if (buyMatch) {
-            const tokens = parseInt(buyMatch[1]) / 1_000_000;
+            const tokens = parseInt(buyMatch[1]) / 1_000_000_000_000; // Convert from base units to millions
             const sol = parseInt(buyMatch[2]) / 1_000_000_000;
             const price = sol / tokens;
             
@@ -77,7 +77,7 @@ export async function GET(
           // Match: "Sold 10000000 tokens for 300000000 SOL (fee: 3000000)"
           const sellMatch = log.match(/Sold (\d+) tokens for (\d+) SOL \(fee: (\d+)\)/);
           if (sellMatch) {
-            const tokens = parseInt(sellMatch[1]) / 1_000_000;
+            const tokens = parseInt(sellMatch[1]) / 1_000_000_000_000; // Convert from base units to millions
             const sol = parseInt(sellMatch[2]) / 1_000_000_000;
             const price = sol / tokens;
             
