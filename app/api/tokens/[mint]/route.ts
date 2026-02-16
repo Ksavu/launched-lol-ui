@@ -135,11 +135,12 @@ const TOTAL_SUPPLY = 1_000_000_000_000_000;
 
 let marketCap = 0;
 if (bondingCurveStatus === 'valid') {
-  const solCollectedLamports = solCollected; // Already in lamports from line 97
-  const tokensSoldLamports = tokensSold; // Already in lamports from line 96
+  // Convert to lamports for calculation
+  const solCollectedLamports = solCollected; // Already in lamports
+  const tokensSoldBaseUnits = tokensSold * 1_000_000; // Convert millions to base units
   
   const currentVirtualSol = VIRTUAL_SOL + solCollectedLamports;
-  const currentVirtualTokens = VIRTUAL_TOKENS - tokensSoldLamports;
+  const currentVirtualTokens = VIRTUAL_TOKENS - tokensSoldBaseUnits;
   
   const pricePerToken = currentVirtualSol / currentVirtualTokens;
   const marketCapLamports = pricePerToken * TOTAL_SUPPLY;
