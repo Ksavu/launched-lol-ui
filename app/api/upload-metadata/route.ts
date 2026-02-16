@@ -2,13 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, symbol, description, imageUrl } = await request.json();
+    const { name, symbol, description, imageUrl, twitter, telegram, website } = await request.json();
 
     const metadata = {
       name,
       symbol,
       description,
       image: imageUrl,
+      // Add socials if provided
+      ...(twitter && { twitter }),
+      ...(telegram && { telegram }),
+      ...(website && { website }),
       attributes: [],
       properties: {
         files: [
