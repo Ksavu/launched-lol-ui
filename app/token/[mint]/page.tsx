@@ -647,8 +647,17 @@ useEffect(() => {
                         <div className={`px-2 py-1 rounded text-xs font-bold ${trade.type === 'buy' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                           {trade.type.toUpperCase()}
                         </div>
+            
                         <div>
-                          <p className="text-white font-semibold">{trade.tokens.toFixed(2)}M tokens</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-white font-semibold">{trade.tokens.toFixed(2)}M tokens</p>
+                            {/* Dev Indicator */}
+                            {trade.user === token.creator && (
+                              <span className="bg-yellow-400/20 text-yellow-400 text-xs font-bold px-2 py-0.5 rounded">
+                                DEV
+                              </span>
+                            )}
+                          </div>
                           <p className="text-gray-400 text-sm">{trade.sol.toFixed(3)} SOL</p>
                         </div>
                       </div>
@@ -664,33 +673,78 @@ useEffect(() => {
               )}
             </div>
 
-            {/* Holders List */}
-            <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl sm:text-2xl font-bold text-white">Top Holders</h2>
-                <span className="text-gray-400 text-sm">{holderCount !== null ? `${holderCount} holders` : 'Loading...'}</span>
-              </div>
-              {holdersList.length === 0 ? (
-                <p className="text-gray-400 text-center py-8">Loading holders...</p>
-              ) : (
-                <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                  {holdersList.map((holder, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-black/50 rounded-lg border border-gray-800">
-                      <div className="flex items-center gap-3">
-                        <span className="text-gray-400 font-mono text-sm">#{idx + 1}</span>
-                        <a href={`https://solscan.io/account/${holder.address}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-400 font-mono text-sm transition">
-                          {holder.address.slice(0, 4)}...{holder.address.slice(-4)}
-                        </a>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-white font-semibold">{holder.balance.toFixed(2)}M</p>
-                        <p className="text-gray-400 text-xs">{holder.percentage.toFixed(2)}%</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+           {/* Holders List */}
+           <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
+             <div className="flex items-center justify-between mb-4">
+               <h2 className="text-xl sm:text-2xl font-bold text-white">Top Holders</h2>
+               <span className="text-gray-400 text-sm">{holderCount !== null ? `${holderCount} holders` : 'Loading...'}</span>
+             </div>
+             {holdersList.length === 0 ? (
+               <p className="text-gray-400 text-center py-8">Loading holders...</p>
+             ) : (
+               <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                 {holdersList.map((holder, idx) => (
+                   <div key={idx} className="flex items-center justify-between p-3 bg-black/50 rounded-lg border border-gray-800">
+                     <div className="flex items-center gap-3">
+                       <span className="text-gray-400 font-mono text-sm">#{idx + 1}</span>
+                       <div className="flex items-center gap-2">
+                         <a href={`https://solscan.io/account/${holder.address}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-400 font-mono text-sm transition">
+                           {holder.address.slice(0, 4)}...{holder.address.slice(-4)}
+                         </a>
+                         {/* Dev Badge */}
+                         {holder.address === token.creator && (
+                           <span className="bg-yellow-400/20 text-yellow-400 text-xs font-bold px-2 py-0.5 rounded">
+                             DEV
+                           </span>
+                         )}
+                       </div>
+                     </div>
+                     <div className="text-right">
+                       <p className="text-white font-semibold">{holder.balance.toFixed(2)}M</p>
+                       <p className="text-gray-400 text-xs">{holder.percentage.toFixed(2)}%</p>
+                     </div>
+                   </div>
+                 ))}
+               </div>
+             )}
+           </div>
+
+{/* Dev Activity (in statistics section) */}
+<div className="bg-gray-900 rounded-xl p-4 border-2 border-gray-800">
+  <h3 className="text-white font-semibold mb-3">Creator Activity</h3>
+  
+  <div className="space-y-2">
+    <div className="flex justify-between text-sm">
+      <span className="text-gray-400">Creator</span>
+      <a
+        href={`https://solscan.io/account/${token.creator}?cluster=devnet`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-yellow-400 hover:text-yellow-300 font-mono transition"
+      >
+        {token.creator.slice(0, 4)}...{token.creator.slice(-4)}
+      </a>
+    </div>
+    
+    <div className="flex justify-between text-sm">
+      <span className="text-gray-400">Dev Trades</span>
+      <span className="text-white font-semibold">
+        {trades.filter(t => t.user === token.creator).length}
+      </span>
+    </div>
+    
+    <div className="flex justify-between text-sm">
+      <span className="text-gray-400">Dev Holdings</span>
+      <span className="text-white font-semibold">
+        {(() => {
+          const devHolder = holdersList.find(h => h.address === token.creator);
+          return devHolder ? `${devHolder.balance.toFixed(2)}M (${devHolder.percentage.toFixed(2)}%)` : '0';
+        })()}
+      </span>
+    </div>
+  </div>
+</div>
+
           </div>
         </div>
       </div>
