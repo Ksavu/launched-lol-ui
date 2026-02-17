@@ -84,6 +84,25 @@ const handleSubmit = async (e: React.FormEvent) => {
       return;
     }
 
+    // Validate premium socials
+  if (formData.tier === 'premium') {
+    if (!formData.twitter || !formData.telegram) {
+      alert('Premium tokens require X (Twitter) and Telegram links!');
+      return;
+    }
+    
+    // Validate URL format
+    if (!formData.twitter.startsWith('https://x.com/') && !formData.twitter.startsWith('https://twitter.com/')) {
+      alert('Please enter a valid X (Twitter) URL starting with https://x.com/ or https://twitter.com/');
+      return;
+    }
+    
+    if (!formData.telegram.startsWith('https://t.me/')) {
+      alert('Please enter a valid Telegram URL starting with https://t.me/');
+      return;
+    }
+  }
+
     setIsCreating(true);
     
     try {
@@ -421,7 +440,12 @@ resetForm();
           {/* Social Links */}
 <div className="mb-6">
   <label className="block text-white font-semibold mb-3">
-    Social Links <span className="text-gray-400 text-sm font-normal">(Optional)</span>
+    Social Links 
+    {formData.tier === 'premium' ? (
+      <span className="text-red-400 text-sm font-normal"> (Required for Premium)</span>
+    ) : (
+      <span className="text-gray-400 text-sm font-normal"> (Optional)</span>
+    )}
   </label>
   
   <div className="space-y-3">
@@ -489,8 +513,15 @@ resetForm();
     placeholder="https://yourtoken.com"
   />
 </div>
-  </div>
+  
+  {/* Add this warning */}
+  {formData.tier === 'premium' && (!formData.twitter || !formData.telegram) && (
+    <p className="text-red-400 text-sm mt-2">
+      ⚠️ Premium tokens require X (Twitter) and Telegram links
+    </p>
+  )}
 </div>
+  </div>
 
           {/* Category */}
           <div className="mb-6">
