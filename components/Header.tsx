@@ -43,8 +43,11 @@ export const Header = () => {
             <Link href="/explore" className="text-gray-300 hover:text-yellow-400 transition">
               Explore
             </Link>
+            <Link href="/portfolio" className="text-gray-300 hover:text-yellow-400 transition">
+              Portfolio
+            </Link>            
           </nav>
-
+            
           {/* Wallet Button - Only render after mount */}
           <div className="flex-shrink-0">
             {mounted ? (

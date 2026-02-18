@@ -4,6 +4,7 @@ import { Connection, PublicKey } from '@solana/web3.js';
 const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
 const TOKEN_FACTORY_PROGRAM_ID = new PublicKey('7F4JYKAEs7VhVd9P8E1wHhd8aiwtKYeo1tTxabDqpCvX');
 const BONDING_CURVE_PROGRAM_ID = new PublicKey('21ACVywCBCgrgAx8HpLJM6mJC8pxMzvvi58in5Xv7qej');
+const SOCIAL_REGISTRY_PROGRAM_ID = new PublicKey('K3Fp6EiRsECtYbj63aG52D7rn2DiJdaLaxnN8MFpprh');
 
 export async function GET() {
   try {
@@ -48,7 +49,7 @@ export async function GET() {
           const isPremium = tier === 1; // 0 = free, 1 = premium
 
           // Parse category (one byte after tier)
-          const category = data[tierOffset + 1]; // One byte after tier
+          const category = data[tierOffset + 1];
           
           // Get bonding curve data
           const [bondingCurve] = PublicKey.findProgramAddressSync(
@@ -105,12 +106,12 @@ export async function GET() {
           
           // Fetch SOL price
           let solPrice = 200; // default fallback
-              try {
-          const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
-          const priceData = await priceResponse.json();
-                solPrice = priceData.solana.usd;
+          try {
+            const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+            const priceData = await priceResponse.json();
+            solPrice = priceData.solana.usd;
           } catch (e) {
-                console.log('Failed to fetch SOL price, using $200');
+            console.log('Failed to fetch SOL price, using $200');
           }
           
           // Calculate market cap
@@ -119,19 +120,45 @@ export async function GET() {
           const TOTAL_SUPPLY = 1_000_000_000_000_000;
 
           let marketCap = 0;
-              if (bondingCurveStatus === 'valid') {
-          // Convert back to lamports for calculation
-          const solCollectedLamports = solCollected * 1_000_000_000; // solCollected is in SOL
-          const tokensSoldLamports = tokensSold * 1_000_000; // tokensSold is in millions
+          if (bondingCurveStatus === 'valid') {
+            const solCollectedLamports = solCollected * 1_000_000_000;
+            const tokensSoldLamports = tokensSold * 1_000_000;
 
-          const currentVirtualSol = VIRTUAL_SOL + solCollectedLamports;
-          const currentVirtualTokens = VIRTUAL_TOKENS - tokensSoldLamports;
+            const currentVirtualSol = VIRTUAL_SOL + solCollectedLamports;
+            const currentVirtualTokens = VIRTUAL_TOKENS - tokensSoldLamports;
 
-          const pricePerToken = currentVirtualSol / currentVirtualTokens;
-          const marketCapLamports = pricePerToken * TOTAL_SUPPLY;
-          const marketCapSOL = marketCapLamports / 1_000_000_000;
+            const pricePerToken = currentVirtualSol / currentVirtualTokens;
+            const marketCapLamports = pricePerToken * TOTAL_SUPPLY;
+            const marketCapSOL = marketCapLamports / 1_000_000_000;
 
-                marketCap = marketCapSOL * solPrice;
+            marketCap = marketCapSOL * solPrice;
+          }
+
+          // Check if token has any verified socials
+          let hasVerifiedSocials = false;
+          try {
+            const platforms = [0, 1, 2, 3]; // Twitter, Telegram, Discord, Website
+            for (const platform of platforms) {
+              const [socialPDA] = PublicKey.findProgramAddressSync(
+                [
+                  Buffer.from('social-registry'),
+                  mint.toBuffer(),
+                  Buffer.from([platform]),
+                ],
+                SOCIAL_REGISTRY_PROGRAM_ID
+              );
+              
+              const socialAccount = await connection.getAccountInfo(socialPDA);
+              if (socialAccount) {
+                const verified = socialAccount.data[127] === 1;
+                if (verified) {
+                  hasVerifiedSocials = true;
+                  break;
+                }
+              }
+            }
+          } catch (error) {
+            // Skip if error checking verification
           }
 
           return {
@@ -152,6 +179,7 @@ export async function GET() {
             marketCap,
             category: ['meme', 'ai', 'gaming', 'defi', 'nft', 'other'][category] || 'other',
             isPremium,
+            verified: hasVerifiedSocials,
           };
           
         } catch (error) {
@@ -162,9 +190,15 @@ export async function GET() {
     );
     
     const validTokens = tokens
-       .filter((t) => t !== null)
-       .filter((t) => t!.bondingCurveStatus === 'valid') // ← Only show valid bonding curves
-       .sort((a, b) => b!.solCollected - a!.solCollected);
+      .filter((t) => t !== null)
+      .filter((t) => t!.bondingCurveStatus === 'valid')
+      .sort((a, b) => {
+        // Sort: Verified first, then by SOL collected
+        if (a!.verified !== b!.verified) {
+          return a!.verified ? -1 : 1;
+        }
+        return b!.solCollected - a!.solCollected;
+      });
 
     return NextResponse.json({ tokens: validTokens });
     

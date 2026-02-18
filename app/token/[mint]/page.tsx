@@ -81,6 +81,11 @@ export default function TokenPage() {
     timestamp: number;
   }>>([]);
   const [commentMessage, setCommentMessage] = useState('');
+  const [verificationStatus, setVerificationStatus] = useState<{
+  verified: boolean;
+  pending?: boolean;
+  platforms: string[];
+} | null>(null);
 
   // ✅ NOW useEffect hooks come AFTER all useState
   
@@ -333,6 +338,23 @@ export default function TokenPage() {
     return () => clearInterval(interval);
   }, [token]);
 
+  // Check verification status
+useEffect(() => {
+  const checkVerification = async () => {
+    if (!token) return;
+    
+    try {
+      const response = await fetch(`/api/verification/status/${token.address}`);
+      const data = await response.json();
+      setVerificationStatus(data);
+    } catch (error) {
+      console.error('Error checking verification:', error);
+    }
+  };
+  
+  checkVerification();
+}, [token]);
+
   // ✅ Functions come AFTER all hooks
   const refreshTradesAndChart = async () => {
     try {
@@ -466,6 +488,67 @@ export default function TokenPage() {
     );
   }
 
+const handleRequestVerification = async () => {
+  if (!connected || !publicKey || !token) return;
+  
+  setTrading(true);
+  try {
+    const { registerSocial, generateVerificationCode, SocialPlatform } = await import('../../../lib/social-registry-client');
+    const wallet = { publicKey, signTransaction, signAllTransactions };
+    
+    // Register Twitter
+    if (token.twitter) {
+      const verificationCode = generateVerificationCode();
+      await registerSocial(
+        connection,
+        wallet,
+        token.address,
+        SocialPlatform.Twitter,
+        token.twitter,
+        verificationCode
+      );
+    }
+    
+    // Register Telegram
+    if (token.telegram) {
+      const verificationCode = generateVerificationCode();
+      await registerSocial(
+        connection,
+        wallet,
+        token.address,
+        SocialPlatform.Telegram,
+        token.telegram,
+        verificationCode
+      );
+    }
+    
+    // Register Website
+    if (token.website) {
+      const verificationCode = generateVerificationCode();
+      await registerSocial(
+        connection,
+        wallet,
+        token.address,
+        SocialPlatform.Website,
+        token.website,
+        verificationCode
+      );
+    }
+    
+    alert('✅ Verification request submitted! Our team will review and verify your socials within 24-48 hours.');
+    
+    // Refresh verification status
+    const response = await fetch(`/api/verification/status/${token.address}`);
+    const data = await response.json();
+    setVerificationStatus(data);
+    
+  } catch (error: any) {
+    alert(`Error: ${error.message}`);
+  } finally {
+    setTrading(false);
+  }
+};
+
   const handleClaimDevTokens = async () => {
   if (!connected || !publicKey || !token) {
     alert('Please connect wallet!');
@@ -579,6 +662,57 @@ export default function TokenPage() {
         <span className="text-white text-sm">Website</span>
       </a>
     )}
+  </div>
+)}
+
+{/* Request Verification - Show for creator if they have socials */}
+{connected && 
+ publicKey && 
+ token.creator === publicKey.toBase58() && 
+ (token.twitter || token.telegram || token.website) && (
+  <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl p-6 border-2 border-blue-400 mb-6">
+    <div className="flex items-start gap-4">
+      <div className="flex-shrink-0">
+        <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+          <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+          </svg>
+        </div>
+      </div>
+      <div className="flex-1">
+        <h3 className="text-xl font-bold text-white mb-2">🔐 Get Verified</h3>
+        <p className="text-gray-300 text-sm mb-4">
+          Prove your social accounts are authentic. Verified accounts get a blue checkmark badge, 
+          helping users identify the official project.
+        </p>
+        
+        {verificationStatus?.verified ? (
+          <div className="bg-green-500/20 border border-green-400 rounded-lg p-4">
+            <p className="text-green-400 font-bold">✅ Verified Accounts:</p>
+            <ul className="text-green-300 text-sm mt-2">
+              {verificationStatus.platforms.map(platform => (
+                <li key={platform}>• {platform}</li>
+              ))}
+            </ul>
+          </div>
+        ) : verificationStatus?.pending ? (
+          <div className="bg-yellow-500/20 border border-yellow-400 rounded-lg p-4">
+            <p className="text-yellow-400 font-bold">⏳ Verification Pending</p>
+            <p className="text-yellow-300 text-sm mt-1">
+              Our team will review your request within 24-48 hours.
+            </p>
+          </div>
+        ) : (
+          <button
+            onClick={handleRequestVerification}
+            disabled={trading}
+            className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 text-white font-bold px-6 py-3 rounded-lg transition"
+          >
+            {trading ? 'Submitting...' : 'Request Verification'}
+          </button>
+        )}
+      </div>
+    </div>
   </div>
 )}
 
