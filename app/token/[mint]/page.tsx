@@ -466,6 +466,47 @@ export default function TokenPage() {
     );
   }
 
+  const handleClaimDevTokens = async () => {
+  if (!connected || !publicKey || !token) {
+    alert('Please connect wallet!');
+    return;
+  }
+  
+  if (token.creator !== publicKey.toBase58()) {
+    alert('Only the creator can claim dev tokens!');
+    return;
+  }
+  
+  setTrading(true);
+  try {
+    const { releaseDevTokens } = await import('../../../lib/bonding-curve-client');
+    const wallet = { publicKey, signTransaction, signAllTransactions };
+    
+    const tx = await releaseDevTokens(
+      connection,
+      wallet,
+      token.address
+    );
+    
+    alert(
+      `🎉 Success!\n\n` +
+      `You claimed 30M dev tokens!\n\n` +
+      `TX: https://solscan.io/tx/${tx}?cluster=devnet`
+    );
+    
+    // Refresh token data
+    const response = await fetch(`/api/tokens/${mint}`);
+    const data = await response.json();
+    if (data.token) setToken(data.token);
+    
+  } catch (error: any) {
+    console.error(error);
+    alert(`Error: ${error.message || error.toString()}`);
+  } finally {
+    setTrading(false);
+  }
+};
+
   const last24hTrades = trades.filter(t => t.timestamp > Date.now() / 1000 - 86400);
   const volume24h = last24hTrades.reduce((sum, t) => sum + t.sol, 0);
   
@@ -843,6 +884,26 @@ export default function TokenPage() {
                 </div>
               </div>
             </div>
+
+{/* Claim Dev Tokens - Only show for creator after graduation */}
+{connected && 
+ publicKey && 
+ token.creator === publicKey.toBase58() && 
+ token.graduated && (
+  <div className="bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 rounded-xl p-6 border-2 border-yellow-400">
+    <h3 className="text-2xl font-bold text-white mb-3">🎁 Claim Your Dev Tokens</h3>
+    <p className="text-gray-300 mb-4">
+      Your token has graduated! Claim your 30M developer allocation.
+    </p>
+    <button
+      onClick={handleClaimDevTokens}
+      disabled={trading}
+      className="w-full bg-yellow-400 hover:bg-yellow-500 disabled:bg-gray-600 text-black font-bold py-4 rounded-lg transition text-lg"
+    >
+      {trading ? 'Claiming...' : '🎁 Claim 30M Dev Tokens'}
+    </button>
+  </div>
+)}
 
             {/* Comments Section */}
             <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">

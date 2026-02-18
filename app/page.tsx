@@ -1,10 +1,36 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Header } from '../components/Header';
 import Link from 'next/link';
 import { ArrowRightIcon, RocketLaunchIcon, ShieldCheckIcon, ChartBarIcon } from '@heroicons/react/24/outline';
 
 export default function Home() {
+  const [stats, setStats] = useState({
+    tokensLaunched: 0,
+    tvl: '0',
+    graduated: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/stats');
+        const data = await response.json();
+        setStats(data);
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+    const interval = setInterval(fetchStats, 30000); // Refresh every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black">
       <Header />
@@ -72,23 +98,33 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats */}
+      {/* Stats - UPDATED WITH LIVE DATA */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="bg-gradient-to-r from-purple-900 to-pink-900 rounded-2xl p-12 text-center">
-          <div className="grid md:grid-cols-3 gap-8">
-            <div>
-              <div className="text-4xl font-bold text-white mb-2">0</div>
-              <div className="text-gray-300">Tokens Launched</div>
+          {loading ? (
+            <div className="text-white text-xl">Loading stats...</div>
+          ) : (
+            <div className="grid md:grid-cols-3 gap-8">
+              <div>
+                <div className="text-5xl font-bold text-white mb-2">
+                  {stats.tokensLaunched}
+                </div>
+                <div className="text-gray-300 text-lg">Tokens Launched</div>
+              </div>
+              <div>
+                <div className="text-5xl font-bold text-white mb-2">
+                  {stats.tvl} SOL
+                </div>
+                <div className="text-gray-300 text-lg">Total Value Locked</div>
+              </div>
+              <div>
+                <div className="text-5xl font-bold text-white mb-2">
+                  {stats.graduated}
+                </div>
+                <div className="text-gray-300 text-lg">Graduated Tokens</div>
+              </div>
             </div>
-            <div>
-              <div className="text-4xl font-bold text-white mb-2">$0</div>
-              <div className="text-gray-300">Total Volume</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-white mb-2">0</div>
-              <div className="text-gray-300">Graduated Tokens</div>
-            </div>
-          </div>
+          )}
         </div>
       </section>
 
