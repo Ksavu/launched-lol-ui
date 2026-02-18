@@ -21,15 +21,25 @@ export async function GET() {
       try {
         const data = account.data;
         
-        // Parse SOL collected (offset 80)
-        const solCollected = Number(data.readBigUInt64LE(80)) / 1_000_000_000;
-        tvl += solCollected;
+        // Check if account has valid discriminator
+        const expectedDiscriminator = Buffer.from([23, 183, 248, 55, 96, 216, 172, 96]);
+        const actualDiscriminator = data.slice(0, 8);
         
-        // Parse graduated flag (offset 187)
+        if (!actualDiscriminator.equals(expectedDiscriminator)) {
+          return; // Skip invalid accounts
+        }
+        
+        // Parse real_sol_reserves (offset 96, u64 in lamports)
+        const realSolReserves = Number(data.readBigUInt64LE(96));
+        const solInSOL = realSolReserves / 1_000_000_000;
+        tvl += solInSOL;
+        
+        // Parse graduated flag (offset 187, bool)
         const isGraduated = data[187] === 1;
         if (isGraduated) graduated++;
       } catch (error) {
         // Skip malformed accounts
+        console.error('Error parsing curve account:', error);
       }
     });
     
