@@ -19,7 +19,7 @@ interface Token {
   isActive: boolean;
   graduated: boolean;
   category: string;
-  isPremium?: boolean; // Add this
+  isPremium?: boolean;
 }
 
 export default function Explore() {
