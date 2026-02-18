@@ -40,7 +40,7 @@ export default function Home() {
         <div className="text-center">
           <h1 className="text-5xl md:text-7xl font-bold text-white mb-6">
             Launch Your Token
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-800">
               The Fair Way
             </span>
           </h1>
@@ -51,7 +51,7 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 
               href="/create"
-              className="inline-flex items-center px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition"
+              className="inline-flex items-center px-8 py-4 bg-yellow-400 hover:bg-purple-700 text-black font-semibold rounded-lg transition"
             >
               Create Token
               <ArrowRightIcon className="ml-2 h-5 w-5" />
@@ -100,28 +100,28 @@ export default function Home() {
 
       {/* Stats - UPDATED WITH LIVE DATA */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="bg-gradient-to-r from-purple-900 to-pink-900 rounded-2xl p-12 text-center">
+        <div className="bg-gradient-to-r from-yellow-400 to-yellow-800 rounded-2xl p-12 text-center">
           {loading ? (
             <div className="text-white text-xl">Loading stats...</div>
           ) : (
             <div className="grid md:grid-cols-3 gap-8">
               <div>
-                <div className="text-5xl font-bold text-white mb-2">
+                <div className="text-5xl font-bold text-black mb-2">
                   {stats.tokensLaunched}
                 </div>
-                <div className="text-gray-300 text-lg">Tokens Launched</div>
+                <div className="text-black-300 text-lg">Tokens Launched</div>
               </div>
               <div>
-                <div className="text-5xl font-bold text-white mb-2">
+                <div className="text-5xl font-bold text-black mb-2">
                   {stats.tvl} SOL
                 </div>
-                <div className="text-gray-300 text-lg">Total Value Locked</div>
+                <div className="text-black-300 text-lg">Total Value Locked</div>
               </div>
               <div>
-                <div className="text-5xl font-bold text-white mb-2">
+                <div className="text-5xl font-bold text-black mb-2">
                   {stats.graduated}
                 </div>
-                <div className="text-gray-300 text-lg">Graduated Tokens</div>
+                <div className="text-black-300 text-lg">Graduated Tokens</div>
               </div>
             </div>
           )}
