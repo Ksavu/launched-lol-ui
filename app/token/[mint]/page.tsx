@@ -26,9 +26,9 @@ interface TokenData {
   isActive: boolean;
   graduated: boolean;
   marketCap: number;
-  twitter: '',
-  telegram: '',
-  website: '',
+  twitter?: string;
+  telegram?: string;
+  website?: string;
 }
 
 interface CandleData {
@@ -61,6 +61,7 @@ export default function TokenPage() {
   const { publicKey, connected, signTransaction, signAllTransactions } = useWallet();
   const { connection } = useConnection();
 
+  // ✅ ALL useState MUST BE HERE AT THE TOP - IN ORDER
   const [token, setToken] = useState<TokenData | null>(null);
   const [loading, setLoading] = useState(true);
   const [buyAmount, setBuyAmount] = useState("0.1");
@@ -73,7 +74,16 @@ export default function TokenPage() {
   const [holderCount, setHolderCount] = useState<number | null>(null);
   const [holdersList, setHoldersList] = useState<Holder[]>([]);
   const [ws, setWs] = useState<TokenWebSocket | null>(null);
+  const [comments, setComments] = useState<Array<{
+    id: string;
+    user: string;
+    message: string;
+    timestamp: number;
+  }>>([]);
+  const [commentMessage, setCommentMessage] = useState('');
 
+  // ✅ NOW useEffect hooks come AFTER all useState
+  
   // Fetch holder count
   useEffect(() => {
     const fetchHolders = async () => {
@@ -96,7 +106,6 @@ export default function TokenPage() {
           }
         );
         
-        // Filter out zero balances
         const holders = response.filter(account => {
           try {
             const amount = account.account.data.readBigUInt64LE(64);
@@ -115,71 +124,67 @@ export default function TokenPage() {
     fetchHolders();
   }, [token, connection]);
 
-// Fetch holders list
-useEffect(() => {
-  const fetchHoldersList = async () => {
-    if (!token) return;
-    
-    try {
-      const mintPubkey = new PublicKey(token.address);
-      const response = await connection.getProgramAccounts(
-        TOKEN_PROGRAM_ID,
-        {
-          filters: [
-            { dataSize: 165 },
-            {
-              memcmp: {
-                offset: 0,
-                bytes: mintPubkey.toBase58(),
+  // Fetch holders list
+  useEffect(() => {
+    const fetchHoldersList = async () => {
+      if (!token) return;
+      
+      try {
+        const mintPubkey = new PublicKey(token.address);
+        const response = await connection.getProgramAccounts(
+          TOKEN_PROGRAM_ID,
+          {
+            filters: [
+              { dataSize: 165 },
+              {
+                memcmp: {
+                  offset: 0,
+                  bytes: mintPubkey.toBase58(),
+                },
               },
-            },
-          ],
-        }
-      );
-      
-      // Total supply in base units (1 billion tokens with 6 decimals)
-      const TOTAL_SUPPLY_BASE_UNITS = 1_000_000_000_000_000;
-      
-      // Parse holders with balances
-      const holders = response
-        .map(account => {
-          try {
-            const amountBaseUnits = Number(account.account.data.readBigUInt64LE(64));
-            if (amountBaseUnits === 0) return null;
-            
-            const owner = new PublicKey(account.account.data.slice(32, 64));
-            
-            // Convert base units to millions for display
-            const actualTokens = amountBaseUnits / 1_000_000; // Remove 6 decimals
-            const tokensInMillions = actualTokens / 1_000_000; // Convert to millions
-            
-            // Calculate percentage of TOTAL SUPPLY (not just sold)
-            const percentage = (amountBaseUnits / TOTAL_SUPPLY_BASE_UNITS) * 100;
-            
-            return {
-              address: owner.toBase58(),
-              balance: tokensInMillions,
-              percentage: percentage,
-            };
-          } catch {
-            return null;
+            ],
           }
-        })
-        .filter(h => h !== null)
-        .sort((a, b) => b!.balance - a!.balance)
-        .slice(0, 20) as Holder[];
-      
-      setHoldersList(holders);
-    } catch (error) {
-      console.error('Error fetching holders list:', error);
-    }
-  };
-  
-  fetchHoldersList();
-  
-  const interval = setInterval(fetchHoldersList, 30000);
-  return () => clearInterval(interval);
-}, [token, connection]);
+        );
+        
+        const TOTAL_SUPPLY_BASE_UNITS = 1_000_000_000_000_000;
+        
+        const holders = response
+          .map(account => {
+            try {
+              const amountBaseUnits = Number(account.account.data.readBigUInt64LE(64));
+              if (amountBaseUnits === 0) return null;
+              
+              const owner = new PublicKey(account.account.data.slice(32, 64));
+              
+              const actualTokens = amountBaseUnits / 1_000_000;
+              const tokensInMillions = actualTokens / 1_000_000;
+              
+              const percentage = (amountBaseUnits / TOTAL_SUPPLY_BASE_UNITS) * 100;
+              
+              return {
+                address: owner.toBase58(),
+                balance: tokensInMillions,
+                percentage: percentage,
+              };
+            } catch {
+              return null;
+            }
+          })
+          .filter(h => h !== null)
+          .sort((a, b) => b!.balance - a!.balance)
+          .slice(0, 20) as Holder[];
+        
+        setHoldersList(holders);
+      } catch (error) {
+        console.error('Error fetching holders list:', error);
+      }
+    };
+    
+    fetchHoldersList();
+    
+    const interval = setInterval(fetchHoldersList, 30000);
+    return () => clearInterval(interval);
+  }, [token, connection]);
 
   // Rebuild candles when interval changes
   useEffect(() => {
@@ -194,7 +199,7 @@ useEffect(() => {
     }
   }, [chartInterval, trades]);
 
-  // WebSocket subscription for real-time updates
+  // WebSocket subscription
   useEffect(() => {
     if (!token) return;
 
@@ -309,6 +314,26 @@ useEffect(() => {
     fetchTokenData();
   }, [mint, chartInterval]);
 
+  // Fetch comments
+  useEffect(() => {
+    const fetchComments = async () => {
+      if (!token) return;
+      
+      try {
+        const response = await fetch(`/api/comments/${token.address}`);
+        const data = await response.json();
+        setComments(data.comments || []);
+      } catch (error) {
+        console.error('Error fetching comments:', error);
+      }
+    };
+    
+    fetchComments();
+    const interval = setInterval(fetchComments, 5000);
+    return () => clearInterval(interval);
+  }, [token]);
+
+  // ✅ Functions come AFTER all hooks
   const refreshTradesAndChart = async () => {
     try {
       const tradesResponse = await fetch(`/api/trades/${mint}`);
@@ -392,6 +417,30 @@ useEffect(() => {
       alert(`Error: ${error.message || error.toString()}`);
     } finally {
       setTrading(false);
+    }
+  };
+
+  const handlePostComment = async () => {
+    if (!connected || !publicKey || !commentMessage.trim()) return;
+    
+    try {
+      const response = await fetch(`/api/comments/${token!.address}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user: publicKey.toBase58(),
+          message: commentMessage.trim(),
+        }),
+      });
+      
+      if (response.ok) {
+        setCommentMessage('');
+        const data = await fetch(`/api/comments/${token!.address}`);
+        const commentsData = await data.json();
+        setComments(commentsData.comments || []);
+      }
+    } catch (error) {
+      console.error('Error posting comment:', error);
     }
   };
 
@@ -511,7 +560,7 @@ useEffect(() => {
                 </div>
                 <div className="flex justify-between text-sm sm:text-base">
                   <span className="text-gray-400">Tokens Sold</span>
-                  <span className="text-white font-semibold">{token.tokensSold.toFixed(2)}</span>
+                  <span className="text-white font-semibold">{token.tokensSold.toFixed(2)}M</span>
                 </div>
                 <div className="flex justify-between text-sm sm:text-base">
                   <span className="text-gray-400">Status</span>
@@ -575,7 +624,6 @@ useEffect(() => {
                 <h2 className="text-xl sm:text-2xl font-bold text-white">Price Chart</h2>
                 <div className="flex gap-2">
                   {[
-                    { label: '5s', value: 5 },
                     { label: '1m', value: 60 },
                     { label: '5m', value: 300 },
                     { label: '15m', value: 900 },
@@ -639,52 +687,52 @@ useEffect(() => {
                 )}
               </div>
 
-<div>
-  <label className="block text-white font-semibold mb-2 text-sm sm:text-base">
-    Sell Tokens
-  </label>
-  <div className="flex gap-2 sm:gap-3">
-    <input
-      type="number"
-      step="1"
-      min="1"
-      value={sellAmount}
-      onChange={(e) => setSellAmount(e.target.value)}
-      className="flex-1 bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white outline-none text-sm sm:text-base"
-      placeholder="Amount"
-      disabled={token.bondingCurveStatus !== 'valid'}
-    />
-    <button
-      onClick={handleSell}
-      disabled={
-        trading || 
-        !connected || 
-        token.bondingCurveStatus !== 'valid' ||
-        !token.isActive ||
-        parseFloat(sellAmount) <= 0 || 
-        parseFloat(sellAmount) > (userTokenBalance || 0)
-      }
-      className={`font-bold px-4 sm:px-8 py-2 sm:py-3 rounded-lg transition text-sm sm:text-base whitespace-nowrap ${
-        token.bondingCurveStatus === 'valid' && token.isActive
-          ? 'bg-red-500 hover:bg-red-600'
-          : 'bg-gray-600 cursor-not-allowed'
-      } text-white`}
-    >
-      {token.bondingCurveStatus !== 'valid' 
-        ? 'Not Available' 
-        : !token.isActive
-        ? 'Trading Paused'
-        : trading 
-          ? 'Selling...' 
-          : 'Sell'}
-    </button>
-  </div>
-  {userTokenBalance !== null && token.bondingCurveStatus === 'valid' && (
-    <p className="text-gray-400 text-xs sm:text-sm mt-2">
-      Balance: {userTokenBalance.toLocaleString()} {token.symbol}
-    </p>
-  )}
-</div>
+              <div>
+                <label className="block text-white font-semibold mb-2 text-sm sm:text-base">
+                  Sell Tokens
+                </label>
+                <div className="flex gap-2 sm:gap-3">
+                  <input
+                    type="number"
+                    step="1"
+                    min="1"
+                    value={sellAmount}
+                    onChange={(e) => setSellAmount(e.target.value)}
+                    className="flex-1 bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white outline-none text-sm sm:text-base"
+                    placeholder="Amount"
+                    disabled={token.bondingCurveStatus !== 'valid'}
+                  />
+                  <button
+                    onClick={handleSell}
+                    disabled={
+                      trading || 
+                      !connected || 
+                      token.bondingCurveStatus !== 'valid' ||
+                      !token.isActive ||
+                      parseFloat(sellAmount) <= 0 || 
+                      parseFloat(sellAmount) > (userTokenBalance || 0)
+                    }
+                    className={`font-bold px-4 sm:px-8 py-2 sm:py-3 rounded-lg transition text-sm sm:text-base whitespace-nowrap ${
+                      token.bondingCurveStatus === 'valid' && token.isActive
+                        ? 'bg-red-500 hover:bg-red-600'
+                        : 'bg-gray-600 cursor-not-allowed'
+                    } text-white`}
+                  >
+                    {token.bondingCurveStatus !== 'valid' 
+                      ? 'Not Available' 
+                      : !token.isActive
+                      ? 'Trading Paused'
+                      : trading 
+                        ? 'Selling...' 
+                        : 'Sell'}
+                  </button>
+                </div>
+                {userTokenBalance !== null && token.bondingCurveStatus === 'valid' && (
+                  <p className="text-gray-400 text-xs sm:text-sm mt-2">
+                    Balance: {userTokenBalance.toLocaleString()} {token.symbol}
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Transactions */}
@@ -704,7 +752,6 @@ useEffect(() => {
                         <div>
                           <div className="flex items-center gap-2">
                             <p className="text-white font-semibold">{trade.tokens.toFixed(2)}M tokens</p>
-                            {/* Dev Indicator */}
                             {trade.user === token.creator && (
                               <span className="bg-yellow-400/20 text-yellow-400 text-xs font-bold px-2 py-0.5 rounded">
                                 DEV
@@ -744,7 +791,6 @@ useEffect(() => {
                          <a href={`https://solscan.io/account/${holder.address}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-400 font-mono text-sm transition">
                            {holder.address.slice(0, 4)}...{holder.address.slice(-4)}
                          </a>
-                         {/* Dev Badge */}
                          {holder.address === token.creator && (
                            <span className="bg-yellow-400/20 text-yellow-400 text-xs font-bold px-2 py-0.5 rounded">
                              DEV
@@ -762,42 +808,96 @@ useEffect(() => {
              )}
            </div>
 
-{/* Dev Activity (in statistics section) */}
-<div className="bg-gray-900 rounded-xl p-4 border-2 border-gray-800">
-  <h3 className="text-white font-semibold mb-3">Creator Activity</h3>
-  
-  <div className="space-y-2">
-    <div className="flex justify-between text-sm">
-      <span className="text-gray-400">Creator</span>
-      <a
-        href={`https://solscan.io/account/${token.creator}?cluster=devnet`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-yellow-400 hover:text-yellow-300 font-mono transition"
-      >
-        {token.creator.slice(0, 4)}...{token.creator.slice(-4)}
-      </a>
-    </div>
-    
-    <div className="flex justify-between text-sm">
-      <span className="text-gray-400">Dev Trades</span>
-      <span className="text-white font-semibold">
-        {trades.filter(t => t.user === token.creator).length}
-      </span>
-    </div>
-    
-    <div className="flex justify-between text-sm">
-      <span className="text-gray-400">Dev Holdings</span>
-      <span className="text-white font-semibold">
-        {(() => {
-          const devHolder = holdersList.find(h => h.address === token.creator);
-          return devHolder ? `${devHolder.balance.toFixed(2)}M (${devHolder.percentage.toFixed(2)}%)` : '0';
-        })()}
-      </span>
-    </div>
-  </div>
-</div>
+            {/* Dev Activity */}
+            <div className="bg-gray-900 rounded-xl p-4 border-2 border-gray-800">
+              <h3 className="text-white font-semibold mb-3">Creator Activity</h3>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Creator</span>
+                  <a
+                    href={`https://solscan.io/account/${token.creator}?cluster=devnet`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-yellow-400 hover:text-yellow-300 font-mono transition"
+                  >
+                    {token.creator.slice(0, 4)}...{token.creator.slice(-4)}
+                  </a>
+                </div>
+                
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Dev Trades</span>
+                  <span className="text-white font-semibold">
+                    {trades.filter(t => t.user === token.creator).length}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Dev Holdings</span>
+                  <span className="text-white font-semibold">
+                    {(() => {
+                      const devHolder = holdersList.find(h => h.address === token.creator);
+                      return devHolder ? `${devHolder.balance.toFixed(2)}M (${devHolder.percentage.toFixed(2)}%)` : '0';
+                    })()}
+                  </span>
+                </div>
+              </div>
+            </div>
 
+            {/* Comments Section */}
+            <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">💬 Community Chat</h2>
+              
+              <div className="space-y-3 max-h-[400px] overflow-y-auto mb-4">
+                {comments.length === 0 ? (
+                  <p className="text-gray-400 text-center py-8">No comments yet. Be the first!</p>
+                ) : (
+                  comments.map((comment) => (
+                    <div key={comment.id} className="bg-black/50 rounded-lg p-3 border border-gray-800">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-yellow-400 font-mono text-sm">
+                            {comment.user.slice(0, 4)}...{comment.user.slice(-4)}
+                          </span>
+                          {comment.user === token.creator && (
+                            <span className="bg-yellow-400/20 text-yellow-400 text-xs font-bold px-2 py-0.5 rounded">
+                              DEV
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-gray-500 text-xs">
+                          {new Date(comment.timestamp).toLocaleTimeString()}
+                        </span>
+                      </div>
+                      <p className="text-white text-sm">{comment.message}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+              
+              {connected ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={commentMessage}
+                    onChange={(e) => setCommentMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handlePostComment()}
+                    className="flex-1 bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-4 py-3 text-white outline-none text-sm"
+                    placeholder="Say something..."
+                    maxLength={500}
+                  />
+                  <button
+                    onClick={handlePostComment}
+                    disabled={!commentMessage.trim()}
+                    className="bg-yellow-400 hover:bg-yellow-500 disabled:bg-gray-600 text-black font-bold px-6 py-3 rounded-lg transition"
+                  >
+                    Send
+                  </button>
+                </div>
+              ) : (
+                <p className="text-gray-400 text-center py-4">Connect wallet to comment</p>
+              )}
+            </div>
           </div>
         </div>
       </div>
