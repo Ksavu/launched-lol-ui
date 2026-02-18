@@ -17,7 +17,7 @@ export async function GET() {
     let tvl = 0;
     let graduated = 0;
     
-    curveAccounts.forEach(({ account }) => {
+    for (const { pubkey, account } of curveAccounts) {
       try {
         const data = account.data;
         
@@ -26,22 +26,26 @@ export async function GET() {
         const actualDiscriminator = data.slice(0, 8);
         
         if (!actualDiscriminator.equals(expectedDiscriminator)) {
-          return; // Skip invalid accounts
+          continue; // Skip invalid accounts
         }
         
-        // Parse real_sol_reserves (offset 96, u64 in lamports)
-        const realSolReserves = Number(data.readBigUInt64LE(96));
-        const solInSOL = realSolReserves / 1_000_000_000;
-        tvl += solInSOL;
+        // Get SOL balance directly from the account (in lamports)
+        const accountBalance = account.lamports;
+        
+        // Subtract rent exemption (approximately 0.0024 SOL)
+        const RENT_EXEMPTION = 2_400_000; // Approximate rent for bonding curve account
+        const solBalance = Math.max(0, accountBalance - RENT_EXEMPTION);
+        
+        tvl += solBalance / 1_000_000_000;
         
         // Parse graduated flag (offset 187, bool)
         const isGraduated = data[187] === 1;
         if (isGraduated) graduated++;
+        
       } catch (error) {
-        // Skip malformed accounts
         console.error('Error parsing curve account:', error);
       }
-    });
+    }
     
     return NextResponse.json({
       tokensLaunched,
