@@ -601,7 +601,7 @@ export default function TokenPage() {
                 </div>
                 <div className="flex justify-between text-sm sm:text-base">
                   <span className="text-gray-400">Tokens Sold</span>
-                  <span className="text-white font-semibold">{token.tokensSold.toFixed(2)}M</span>
+                  <span className="text-white font-semibold">{token.tokensSold.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm sm:text-base">
                   <span className="text-gray-400">Status</span>
