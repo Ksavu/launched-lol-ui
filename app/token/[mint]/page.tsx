@@ -10,6 +10,7 @@ import { getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from '@solana/spl-tok
 import { PublicKey } from '@solana/web3.js';
 import { TokenWebSocket } from '../../../lib/websocket-client';
 import { TradingViewChart } from '../../../components/TradingViewChart';
+import { getSolPrice, formatMarketCap } from '@/lib/price-utils';
 
 interface TokenData {
   address: string;
@@ -29,6 +30,9 @@ interface TokenData {
   twitter?: string;
   telegram?: string;
   website?: string;
+  virtualSolReserves: number;
+  virtualTokenReserves: number;
+  totalSupply: number;
 }
 
 interface CandleData {
@@ -61,7 +65,7 @@ export default function TokenPage() {
   const { publicKey, connected, signTransaction, signAllTransactions } = useWallet();
   const { connection } = useConnection();
 
-  // ✅ ALL useState MUST BE HERE AT THE TOP - IN ORDER
+  // ✅ ALL useState
   const [token, setToken] = useState<TokenData | null>(null);
   const [loading, setLoading] = useState(true);
   const [buyAmount, setBuyAmount] = useState("0.1");
@@ -82,13 +86,29 @@ export default function TokenPage() {
   }>>([]);
   const [commentMessage, setCommentMessage] = useState('');
   const [verificationStatus, setVerificationStatus] = useState<{
-  verified: boolean;
-  pending?: boolean;
-  platforms: string[];
-} | null>(null);
+    verified: boolean;
+    pending?: boolean;
+    platforms: string[];
+  } | null>(null);
+  const [solPrice, setSolPrice] = useState(100);
 
-  // ✅ NOW useEffect hooks come AFTER all useState
-  
+  // ✅ Fetch SOL price
+  useEffect(() => {
+    const fetchPrice = async () => {
+      try {
+        const price = await getSolPrice();
+        setSolPrice(price);
+      } catch (error) {
+        console.error('Error updating SOL price:', error);
+      }
+    };
+    
+    fetchPrice();
+    const interval = setInterval(fetchPrice, 60000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
   // Fetch holder count
   useEffect(() => {
     const fetchHolders = async () => {
@@ -160,10 +180,8 @@ export default function TokenPage() {
               if (amountBaseUnits === 0) return null;
               
               const owner = new PublicKey(account.account.data.slice(32, 64));
-              
               const actualTokens = amountBaseUnits / 1_000_000;
               const tokensInMillions = actualTokens / 1_000_000;
-              
               const percentage = (amountBaseUnits / TOTAL_SUPPLY_BASE_UNITS) * 100;
               
               return {
@@ -339,23 +357,47 @@ export default function TokenPage() {
   }, [token]);
 
   // Check verification status
-useEffect(() => {
-  const checkVerification = async () => {
-    if (!token) return;
+  useEffect(() => {
+    const checkVerification = async () => {
+      if (!token) return;
+      
+      try {
+        const response = await fetch(`/api/verification/status/${token.address}`);
+        const data = await response.json();
+        setVerificationStatus(data);
+      } catch (error) {
+        console.error('Error checking verification:', error);
+      }
+    };
     
-    try {
-      const response = await fetch(`/api/verification/status/${token.address}`);
-      const data = await response.json();
-      setVerificationStatus(data);
-    } catch (error) {
-      console.error('Error checking verification:', error);
-    }
-  };
-  
-  checkVerification();
-}, [token]);
+    checkVerification();
+  }, [token]);
 
-  // ✅ Functions come AFTER all hooks
+  // ✅ Calculate market cap
+  const calculateMarketCap = () => {
+    if (!token) return 0;
+    
+    if (token.graduated) {
+      // Post-graduation: Raydium pool pricing
+      // 75 SOL worth for 20% of supply = 375 SOL total market cap
+      return 375 * solPrice;
+    } else {
+      // Pre-graduation: Bonding curve pricing
+      const solReserves = token.virtualSolReserves / 1e9;
+      const tokenReserves = token.virtualTokenReserves / 1e6;
+      
+      if (tokenReserves > 0) {
+        const pricePerToken = solReserves / tokenReserves;
+        const TOTAL_SUPPLY = 1_000_000_000;
+        return TOTAL_SUPPLY * pricePerToken * solPrice;
+      }
+    }
+    return 0;
+  };
+
+  const marketCap = calculateMarketCap();
+
+  // ✅ Functions
   const refreshTradesAndChart = async () => {
     try {
       const tradesResponse = await fetch(`/api/trades/${mint}`);
@@ -466,6 +508,115 @@ useEffect(() => {
     }
   };
 
+  const handleRequestVerification = async () => {
+    if (!connected || !publicKey || !token) return;
+    
+    setTrading(true);
+    try {
+      const { registerSocial, generateVerificationCode, SocialPlatform } = await import('../../../lib/social-registry-client');
+      const wallet = { publicKey, signTransaction, signAllTransactions };
+      
+      if (token.twitter) {
+        const verificationCode = generateVerificationCode();
+        await registerSocial(
+          connection,
+          wallet,
+          token.address,
+          SocialPlatform.Twitter,
+          token.twitter,
+          verificationCode
+        );
+      }
+      
+      if (token.telegram) {
+        const verificationCode = generateVerificationCode();
+        await registerSocial(
+          connection,
+          wallet,
+          token.address,
+          SocialPlatform.Telegram,
+          token.telegram,
+          verificationCode
+        );
+      }
+      
+      if (token.website) {
+        const verificationCode = generateVerificationCode();
+        await registerSocial(
+          connection,
+          wallet,
+          token.address,
+          SocialPlatform.Website,
+          token.website,
+          verificationCode
+        );
+      }
+      
+      alert('✅ Verification request submitted! Our team will review and verify your socials within 24-48 hours.');
+      
+      const response = await fetch(`/api/verification/status/${token.address}`);
+      const data = await response.json();
+      setVerificationStatus(data);
+      
+    } catch (error: any) {
+      alert(`Error: ${error.message}`);
+    } finally {
+      setTrading(false);
+    }
+  };
+
+  const handleClaimDevTokens = async () => {
+    if (!connected || !publicKey || !token) {
+      alert('Please connect wallet!');
+      return;
+    }
+    
+    if (token.creator !== publicKey.toBase58()) {
+      alert('Only the creator can claim dev tokens!');
+      return;
+    }
+    
+    setTrading(true);
+    try {
+      const { releaseDevTokens } = await import('../../../lib/bonding-curve-client');
+      const wallet = { publicKey, signTransaction, signAllTransactions };
+      
+      const tx = await releaseDevTokens(
+        connection,
+        wallet,
+        token.address
+      );
+      
+      alert(
+        `🎉 Success!\n\n` +
+        `You claimed 30M dev tokens!\n\n` +
+        `TX: https://solscan.io/tx/${tx}?cluster=devnet`
+      );
+      
+      const response = await fetch(`/api/tokens/${mint}`);
+      const data = await response.json();
+      if (data.token) setToken(data.token);
+      
+    } catch (error: any) {
+      console.error(error);
+      alert(`Error: ${error.message || error.toString()}`);
+    } finally {
+      setTrading(false);
+    }
+  };
+
+  // Calculate stats
+  const last24hTrades = trades.filter(t => t.timestamp > Date.now() / 1000 - 86400);
+  const volume24h = last24hTrades.reduce((sum, t) => sum + t.sol, 0);
+  
+  let priceChange24h = 0;
+  if (last24hTrades.length >= 2) {
+    const oldPrice = last24hTrades[0].price;
+    const newPrice = last24hTrades[last24hTrades.length - 1].price;
+    priceChange24h = ((newPrice - oldPrice) / oldPrice) * 100;
+  }
+
+  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-black">
@@ -477,6 +628,7 @@ useEffect(() => {
     );
   }
 
+  // Not found state
   if (!token) {
     return (
       <div className="min-h-screen bg-black">
@@ -486,118 +638,6 @@ useEffect(() => {
         </div>
       </div>
     );
-  }
-
-const handleRequestVerification = async () => {
-  if (!connected || !publicKey || !token) return;
-  
-  setTrading(true);
-  try {
-    const { registerSocial, generateVerificationCode, SocialPlatform } = await import('../../../lib/social-registry-client');
-    const wallet = { publicKey, signTransaction, signAllTransactions };
-    
-    // Register Twitter
-    if (token.twitter) {
-      const verificationCode = generateVerificationCode();
-      await registerSocial(
-        connection,
-        wallet,
-        token.address,
-        SocialPlatform.Twitter,
-        token.twitter,
-        verificationCode
-      );
-    }
-    
-    // Register Telegram
-    if (token.telegram) {
-      const verificationCode = generateVerificationCode();
-      await registerSocial(
-        connection,
-        wallet,
-        token.address,
-        SocialPlatform.Telegram,
-        token.telegram,
-        verificationCode
-      );
-    }
-    
-    // Register Website
-    if (token.website) {
-      const verificationCode = generateVerificationCode();
-      await registerSocial(
-        connection,
-        wallet,
-        token.address,
-        SocialPlatform.Website,
-        token.website,
-        verificationCode
-      );
-    }
-    
-    alert('✅ Verification request submitted! Our team will review and verify your socials within 24-48 hours.');
-    
-    // Refresh verification status
-    const response = await fetch(`/api/verification/status/${token.address}`);
-    const data = await response.json();
-    setVerificationStatus(data);
-    
-  } catch (error: any) {
-    alert(`Error: ${error.message}`);
-  } finally {
-    setTrading(false);
-  }
-};
-
-  const handleClaimDevTokens = async () => {
-  if (!connected || !publicKey || !token) {
-    alert('Please connect wallet!');
-    return;
-  }
-  
-  if (token.creator !== publicKey.toBase58()) {
-    alert('Only the creator can claim dev tokens!');
-    return;
-  }
-  
-  setTrading(true);
-  try {
-    const { releaseDevTokens } = await import('../../../lib/bonding-curve-client');
-    const wallet = { publicKey, signTransaction, signAllTransactions };
-    
-    const tx = await releaseDevTokens(
-      connection,
-      wallet,
-      token.address
-    );
-    
-    alert(
-      `🎉 Success!\n\n` +
-      `You claimed 30M dev tokens!\n\n` +
-      `TX: https://solscan.io/tx/${tx}?cluster=devnet`
-    );
-    
-    // Refresh token data
-    const response = await fetch(`/api/tokens/${mint}`);
-    const data = await response.json();
-    if (data.token) setToken(data.token);
-    
-  } catch (error: any) {
-    console.error(error);
-    alert(`Error: ${error.message || error.toString()}`);
-  } finally {
-    setTrading(false);
-  }
-};
-
-  const last24hTrades = trades.filter(t => t.timestamp > Date.now() / 1000 - 86400);
-  const volume24h = last24hTrades.reduce((sum, t) => sum + t.sol, 0);
-  
-  let priceChange24h = 0;
-  if (last24hTrades.length >= 2) {
-    const oldPrice = last24hTrades[0].price;
-    const newPrice = last24hTrades[last24hTrades.length - 1].price;
-    priceChange24h = ((newPrice - oldPrice) / oldPrice) * 100;
   }
 
   return (
@@ -616,107 +656,107 @@ const handleRequestVerification = async () => {
               )}
             </div>
 
-{/* Social Links */}
-{(token.twitter || token.website || token.telegram) && (
-  <div className="flex flex-wrap gap-2 mb-6">
-    {token.twitter && (
-      <a
-        href={token.twitter}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-2 bg-black/50 hover:bg-black border border-gray-700 hover:border-yellow-400 rounded-lg px-3 py-2 transition"
-      >
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-        </svg>
-        <span className="text-white text-sm">X</span>
-      </a>
-    )}
-    
-    {token.telegram && (
-      <a
-        href={token.telegram}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-2 bg-black/50 hover:bg-black border border-gray-700 hover:border-yellow-400 rounded-lg px-3 py-2 transition"
-      >
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.461-1.901-.903-1.056-.692-1.653-1.123-2.678-1.799-1.185-.781-.417-1.21.258-1.911.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.242-1.865-.442-.752-.244-1.349-.374-1.297-.789.027-.216.324-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635.099-.002.321.023.465.141.121.099.154.232.17.326.016.094.036.308.02.475z"/>
-        </svg>
-        <span className="text-white text-sm">Telegram</span>
-      </a>
-    )}
-    
-    {token.website && (
-      <a
-        href={token.website}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-2 bg-black/50 hover:bg-black border border-gray-700 hover:border-yellow-400 rounded-lg px-3 py-2 transition"
-      >
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="2" y1="12" x2="22" y2="12"/>
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-        </svg>
-        <span className="text-white text-sm">Website</span>
-      </a>
-    )}
-  </div>
-)}
+            {/* Social Links */}
+            {(token.twitter || token.website || token.telegram) && (
+              <div className="flex flex-wrap gap-2 mb-6">
+                {token.twitter && (
+                  <a
+                    href={token.twitter}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 bg-black/50 hover:bg-black border border-gray-700 hover:border-yellow-400 rounded-lg px-3 py-2 transition"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    <span className="text-white text-sm">X</span>
+                  </a>
+                )}
+                
+                {token.telegram && (
+                  <a
+                    href={token.telegram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 bg-black/50 hover:bg-black border border-gray-700 hover:border-yellow-400 rounded-lg px-3 py-2 transition"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.461-1.901-.903-1.056-.692-1.653-1.123-2.678-1.799-1.185-.781-.417-1.21.258-1.911.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.242-1.865-.442-.752-.244-1.349-.374-1.297-.789.027-.216.324-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635.099-.002.321.023.465.141.121.099.154.232.17.326.016.094.036.308.02.475z"/>
+                    </svg>
+                    <span className="text-white text-sm">Telegram</span>
+                  </a>
+                )}
+                
+                {token.website && (
+                  <a
+                    href={token.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 bg-black/50 hover:bg-black border border-gray-700 hover:border-yellow-400 rounded-lg px-3 py-2 transition"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10"/>
+                      <line x1="2" y1="12" x2="22" y2="12"/>
+                      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                    </svg>
+                    <span className="text-white text-sm">Website</span>
+                  </a>
+                )}
+              </div>
+            )}
 
-{/* Request Verification - Show for creator if they have socials */}
-{connected && 
- publicKey && 
- token.creator === publicKey.toBase58() && 
- (token.twitter || token.telegram || token.website) && (
-  <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl p-6 border-2 border-blue-400 mb-6">
-    <div className="flex items-start gap-4">
-      <div className="flex-shrink-0">
-        <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
-          <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-          </svg>
-        </div>
-      </div>
-      <div className="flex-1">
-        <h3 className="text-xl font-bold text-white mb-2">🔐 Get Verified</h3>
-        <p className="text-gray-300 text-sm mb-4">
-          Prove your social accounts are authentic. Verified accounts get a blue checkmark badge, 
-          helping users identify the official project.
-        </p>
-        
-        {verificationStatus?.verified ? (
-          <div className="bg-green-500/20 border border-green-400 rounded-lg p-4">
-            <p className="text-green-400 font-bold">✅ Verified Accounts:</p>
-            <ul className="text-green-300 text-sm mt-2">
-              {verificationStatus.platforms.map(platform => (
-                <li key={platform}>• {platform}</li>
-              ))}
-            </ul>
-          </div>
-        ) : verificationStatus?.pending ? (
-          <div className="bg-yellow-500/20 border border-yellow-400 rounded-lg p-4">
-            <p className="text-yellow-400 font-bold">⏳ Verification Pending</p>
-            <p className="text-yellow-300 text-sm mt-1">
-              Our team will review your request within 24-48 hours.
-            </p>
-          </div>
-        ) : (
-          <button
-            onClick={handleRequestVerification}
-            disabled={trading}
-            className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 text-white font-bold px-6 py-3 rounded-lg transition"
-          >
-            {trading ? 'Submitting...' : 'Request Verification'}
-          </button>
-        )}
-      </div>
-    </div>
-  </div>
-)}
+            {/* Request Verification */}
+            {connected && 
+             publicKey && 
+             token.creator === publicKey.toBase58() && 
+             (token.twitter || token.telegram || token.website) && (
+              <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl p-6 border-2 border-blue-400 mb-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-white mb-2">🔐 Get Verified</h3>
+                    <p className="text-gray-300 text-sm mb-4">
+                      Prove your social accounts are authentic. Verified accounts get a blue checkmark badge, 
+                      helping users identify the official project.
+                    </p>
+                    
+                    {verificationStatus?.verified ? (
+                      <div className="bg-green-500/20 border border-green-400 rounded-lg p-4">
+                        <p className="text-green-400 font-bold">✅ Verified Accounts:</p>
+                        <ul className="text-green-300 text-sm mt-2">
+                          {verificationStatus.platforms.map(platform => (
+                            <li key={platform}>• {platform}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : verificationStatus?.pending ? (
+                      <div className="bg-yellow-500/20 border border-yellow-400 rounded-lg p-4">
+                        <p className="text-yellow-400 font-bold">⏳ Verification Pending</p>
+                        <p className="text-yellow-300 text-sm mt-1">
+                          Our team will review your request within 24-48 hours.
+                        </p>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleRequestVerification}
+                        disabled={trading}
+                        className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 text-white font-bold px-6 py-3 rounded-lg transition"
+                      >
+                        {trading ? 'Submitting...' : 'Request Verification'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
-
+            {/* Token Info */}
             <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
               <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">{token.name}</h1>
               <p className="text-gray-400 text-base sm:text-lg mb-4">${token.symbol}</p>
@@ -726,12 +766,20 @@ const handleRequestVerification = async () => {
                 <div className="flex justify-between text-sm sm:text-base">
                   <span className="text-gray-400">Market Cap</span>
                   <span className="text-white font-semibold">
-                    ${token.marketCap >= 1000 ? `${(token.marketCap / 1000).toFixed(1)}K` : token.marketCap.toFixed(0)}
+                    {formatMarketCap(marketCap)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm sm:text-base">
-                  <span className="text-gray-400">SOL Collected</span>
-                  <span className="text-white font-semibold">{token.solCollected.toFixed(3)} SOL</span>
+                  <span className="text-gray-400">SOL Price</span>
+                  <span className="text-white font-semibold">${solPrice.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm sm:text-base">
+                  <span className="text-gray-400">
+                    {token.graduated ? 'Final Raise' : 'SOL Collected'}
+                  </span>
+                  <span className="text-white font-semibold">
+                    {token.graduated ? '81.00 SOL' : `${token.solCollected.toFixed(3)} SOL`}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm sm:text-base">
                   <span className="text-gray-400">Tokens Sold</span>
@@ -752,25 +800,62 @@ const handleRequestVerification = async () => {
                   </span>
                 </div>
 
+                {/* Progress Section */}
                 {token.bondingCurveStatus === 'valid' && (
                   <div className="mt-6">
-                    <div className="flex justify-between text-xs sm:text-sm mb-2">
-                      <span className="text-gray-400">Progress to 81 SOL</span>
-                      <span className="text-white font-semibold">{token.progress.toFixed(2)}%</span>
-                    </div>
-                    <div className="w-full bg-gray-800 rounded-full h-3">
-                      <div className="bg-yellow-400 h-3 rounded-full transition-all" style={{ width: `${Math.min(token.progress, 100)}%` }} />
-                    </div>
-                    {token.graduated && (
-                    <p className="text-green-400 text-sm mt-2">
-      ✅ Graduated with {token.solCollected.toFixed(2)} SOL
-                    </p>               
-                )}
-                </div>
+                    {token.graduated ? (
+                      // Graduated - Show final stats
+                      <div className="text-center">
+                        <div className="mb-4">
+                          <span className="bg-green-500 text-white px-4 py-2 rounded-full text-sm font-bold inline-block">
+                            🎓 GRADUATED
+                          </span>
+                        </div>
+                        <p className="text-gray-400 text-sm mb-2">Final Raise</p>
+                        <p className="text-white text-3xl font-bold mb-4">81.00 SOL</p>
+                        <div className="w-full bg-gray-800 rounded-full h-3 mb-2">
+                          <div className="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full w-full" />
+                        </div>
+                        <p className="text-green-400 font-bold">100% Complete</p>
+                        <p className="text-gray-500 text-sm mt-2">
+                          Token graduated to Raydium!
+                        </p>
+                      </div>
+                    ) : (
+                      // Active trading - Show progress
+                      <div>
+                        <div className="flex justify-between text-xs sm:text-sm mb-2">
+                          <span className="text-gray-400">Progress to 81 SOL</span>
+                          <span className="text-white font-semibold">
+                            {Math.min(token.progress, 100).toFixed(2)}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-800 rounded-full h-3 mb-4">
+                          <div 
+                            className="bg-gradient-to-r from-yellow-400 to-yellow-600 h-3 rounded-full transition-all" 
+                            style={{ width: `${Math.min(token.progress, 100)}%` }} 
+                          />
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <div>
+                            <p className="text-gray-400">Raised</p>
+                            <p className="text-white font-bold text-lg">
+                              {token.solCollected.toFixed(2)} SOL
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-gray-400">Goal</p>
+                            <p className="text-white font-bold text-lg">81.00 SOL</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
 
+            {/* Statistics */}
             <div className="bg-gray-900 rounded-xl p-4 border-2 border-gray-800">
               <h3 className="text-white font-semibold mb-3">Statistics</h3>
               <div className="grid grid-cols-2 gap-4">
@@ -804,7 +889,6 @@ const handleRequestVerification = async () => {
                 <h2 className="text-xl sm:text-2xl font-bold text-white">Price Chart</h2>
                 <div className="flex gap-2">
                   {[
-                    { label: '5s', value: 5 },
                     { label: '1m', value: 60 },
                     { label: '5m', value: 300 },
                     { label: '15m', value: 900 },
@@ -840,7 +924,7 @@ const handleRequestVerification = async () => {
                     onChange={(e) => setBuyAmount(e.target.value)}
                     className="flex-1 bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white outline-none text-sm sm:text-base"
                     placeholder="SOL"
-                    disabled={token.bondingCurveStatus !== 'valid'}
+                    disabled={token.bondingCurveStatus !== 'valid' || !token.isActive}
                   />
                   <button
                     onClick={handleBuy}
@@ -852,7 +936,7 @@ const handleRequestVerification = async () => {
                     {token.bondingCurveStatus !== 'valid' ? 'Not Available' : !token.isActive ? 'Trading Paused' : trading ? 'Buying...' : 'Buy'}
                   </button>
                 </div>
-                {token.bondingCurveStatus === 'valid' && (
+                {token.bondingCurveStatus === 'valid' && token.isActive && (
                   <p className="text-gray-400 text-xs sm:text-sm mt-2">
                     {(() => {
                       const solAfterFee = parseFloat(buyAmount) * 0.99;
@@ -881,7 +965,7 @@ const handleRequestVerification = async () => {
                     onChange={(e) => setSellAmount(e.target.value)}
                     className="flex-1 bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white outline-none text-sm sm:text-base"
                     placeholder="Amount"
-                    disabled={token.bondingCurveStatus !== 'valid'}
+                    disabled={token.bondingCurveStatus !== 'valid' || !token.isActive}
                   />
                   <button
                     onClick={handleSell}
@@ -954,40 +1038,40 @@ const handleRequestVerification = async () => {
               )}
             </div>
 
-           {/* Holders List */}
-           <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
-             <div className="flex items-center justify-between mb-4">
-               <h2 className="text-xl sm:text-2xl font-bold text-white">Top Holders</h2>
-               <span className="text-gray-400 text-sm">{holderCount !== null ? `${holderCount} holders` : 'Loading...'}</span>
-             </div>
-             {holdersList.length === 0 ? (
-               <p className="text-gray-400 text-center py-8">Loading holders...</p>
-             ) : (
-               <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                 {holdersList.map((holder, idx) => (
-                   <div key={idx} className="flex items-center justify-between p-3 bg-black/50 rounded-lg border border-gray-800">
-                     <div className="flex items-center gap-3">
-                       <span className="text-gray-400 font-mono text-sm">#{idx + 1}</span>
-                       <div className="flex items-center gap-2">
-                         <a href={`https://solscan.io/account/${holder.address}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-400 font-mono text-sm transition">
-                           {holder.address.slice(0, 4)}...{holder.address.slice(-4)}
-                         </a>
-                         {holder.address === token.creator && (
-                           <span className="bg-yellow-400/20 text-yellow-400 text-xs font-bold px-2 py-0.5 rounded">
-                             DEV
-                           </span>
-                         )}
-                       </div>
-                     </div>
-                     <div className="text-right">
-                       <p className="text-white font-semibold">{holder.balance.toFixed(2)}M</p>
-                       <p className="text-gray-400 text-xs">{holder.percentage.toFixed(2)}%</p>
-                     </div>
-                   </div>
-                 ))}
-               </div>
-             )}
-           </div>
+            {/* Holders List */}
+            <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl sm:text-2xl font-bold text-white">Top Holders</h2>
+                <span className="text-gray-400 text-sm">{holderCount !== null ? `${holderCount} holders` : 'Loading...'}</span>
+              </div>
+              {holdersList.length === 0 ? (
+                <p className="text-gray-400 text-center py-8">Loading holders...</p>
+              ) : (
+                <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                  {holdersList.map((holder, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-black/50 rounded-lg border border-gray-800">
+                      <div className="flex items-center gap-3">
+                        <span className="text-gray-400 font-mono text-sm">#{idx + 1}</span>
+                        <div className="flex items-center gap-2">
+                          <a href={`https://solscan.io/account/${holder.address}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-400 font-mono text-sm transition">
+                            {holder.address.slice(0, 4)}...{holder.address.slice(-4)}
+                          </a>
+                          {holder.address === token.creator && (
+                            <span className="bg-yellow-400/20 text-yellow-400 text-xs font-bold px-2 py-0.5 rounded">
+                              DEV
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-white font-semibold">{holder.balance.toFixed(2)}M</p>
+                        <p className="text-gray-400 text-xs">{holder.percentage.toFixed(2)}%</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Dev Activity */}
             <div className="bg-gray-900 rounded-xl p-4 border-2 border-gray-800">
@@ -1025,25 +1109,25 @@ const handleRequestVerification = async () => {
               </div>
             </div>
 
-{/* Claim Dev Tokens - Only show for creator after graduation */}
-{connected && 
- publicKey && 
- token.creator === publicKey.toBase58() && 
- token.graduated && (
-  <div className="bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 rounded-xl p-6 border-2 border-yellow-400">
-    <h3 className="text-2xl font-bold text-white mb-3">🎁 Claim Your Dev Tokens</h3>
-    <p className="text-gray-300 mb-4">
-      Your token has graduated! Claim your 30M developer allocation.
-    </p>
-    <button
-      onClick={handleClaimDevTokens}
-      disabled={trading}
-      className="w-full bg-yellow-400 hover:bg-yellow-500 disabled:bg-gray-600 text-black font-bold py-4 rounded-lg transition text-lg"
-    >
-      {trading ? 'Claiming...' : '🎁 Claim 30M Dev Tokens'}
-    </button>
-  </div>
-)}
+            {/* Claim Dev Tokens */}
+            {connected && 
+             publicKey && 
+             token.creator === publicKey.toBase58() && 
+             token.graduated && (
+              <div className="bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 rounded-xl p-6 border-2 border-yellow-400">
+                <h3 className="text-2xl font-bold text-white mb-3">🎁 Claim Your Dev Tokens</h3>
+                <p className="text-gray-300 mb-4">
+                  Your token has graduated! Claim your 30M developer allocation.
+                </p>
+                <button
+                  onClick={handleClaimDevTokens}
+                  disabled={trading}
+                  className="w-full bg-yellow-400 hover:bg-yellow-500 disabled:bg-gray-600 text-black font-bold py-4 rounded-lg transition text-lg"
+                >
+                  {trading ? 'Claiming...' : '🎁 Claim 30M Dev Tokens'}
+                </button>
+              </div>
+            )}
 
             {/* Comments Section */}
             <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">

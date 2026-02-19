@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Header } from '../components/Header';
 import Link from 'next/link';
 import { ArrowRightIcon, RocketLaunchIcon, ShieldCheckIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { getSolPrice } from '../lib/price-utils';
 
 export default function Home() {
   const [stats, setStats] = useState({
@@ -12,6 +13,7 @@ export default function Home() {
     graduated: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [solPrice, setSolPrice] = useState(100);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -27,7 +29,23 @@ export default function Home() {
     };
 
     fetchStats();
-    const interval = setInterval(fetchStats, 30000); // Refresh every 30 seconds
+    const interval = setInterval(fetchStats, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const fetchPrice = async () => {
+      try {
+        const price = await getSolPrice();
+        setSolPrice(price);
+      } catch (error) {
+        console.error('Error updating SOL price:', error);
+      }
+    };
+    
+    fetchPrice();
+    const interval = setInterval(fetchPrice, 60000);
+    
     return () => clearInterval(interval);
   }, []);
 
@@ -98,7 +116,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats - UPDATED WITH LIVE DATA */}
+      {/* Stats */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="bg-gradient-to-r from-yellow-400 to-yellow-800 rounded-2xl p-12 text-center">
           {loading ? (
@@ -116,6 +134,9 @@ export default function Home() {
                   {stats.tvl} SOL
                 </div>
                 <div className="text-black-300 text-lg">Total Value Locked</div>
+                <div className="text-black/70 text-sm mt-1">
+                  ${(parseFloat(stats.tvl) * solPrice).toLocaleString(undefined, {maximumFractionDigits: 0})}
+                </div>
               </div>
               <div>
                 <div className="text-5xl font-bold text-black mb-2">
