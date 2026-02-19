@@ -1,3 +1,4 @@
+import { SYSVAR_RENT_PUBKEY } from '@solana/web3.js';
 import { 
   Connection, 
   PublicKey, 
@@ -530,13 +531,11 @@ export async function releaseDevTokens(
     
     const mintPubkey = new PublicKey(mintAddress);
     
-    // Derive bonding curve PDA
     const [bondingCurvePDA] = PublicKey.findProgramAddressSync(
       [Buffer.from('bonding-curve'), mintPubkey.toBuffer()],
       BONDING_CURVE_PROGRAM_ID
     );
     
-    // Get token accounts
     const bondingCurveTokenAccount = getAssociatedTokenAddressSync(
       mintPubkey,
       bondingCurvePDA,
@@ -548,22 +547,22 @@ export async function releaseDevTokens(
       wallet.publicKey
     );
     
-    // Create instruction data (release_dev_tokens discriminator)
+    // Discriminator for release_dev_tokens
     const instructionData = Buffer.from([
-      0x4a, 0x55, 0x8c, 0x6d, 0x3f, 0x7e, 0x1a, 0x9b // release_dev_tokens discriminator
+      55, 184, 218, 165, 190, 45, 85, 42
     ]);
     
     const instruction = {
       keys: [
-        { pubkey: wallet.publicKey, isSigner: true, isWritable: true }, // creator
-        { pubkey: bondingCurvePDA, isSigner: false, isWritable: true }, // bonding_curve
-        { pubkey: mintPubkey, isSigner: false, isWritable: true }, // token_mint
-        { pubkey: bondingCurveTokenAccount, isSigner: false, isWritable: true }, // bonding_curve_token_account
-        { pubkey: creatorTokenAccount, isSigner: false, isWritable: true }, // creator_token_account
-        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // system_program
-        { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false }, // token_program
-        { pubkey: ASSOCIATED_TOKEN_PROGRAM_ID, isSigner: false, isWritable: false }, // associated_token_program
-        { pubkey: new PublicKey('SysvarRent111111111111111111111111111111111'), isSigner: false, isWritable: false }, // rent
+        { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+        { pubkey: bondingCurvePDA, isSigner: false, isWritable: true },
+        { pubkey: mintPubkey, isSigner: false, isWritable: true },
+        { pubkey: bondingCurveTokenAccount, isSigner: false, isWritable: true },
+        { pubkey: creatorTokenAccount, isSigner: false, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+        { pubkey: ASSOCIATED_TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+        { pubkey: new PublicKey('SysvarRent111111111111111111111111111111111'), isSigner: false, isWritable: false },
       ],
       programId: BONDING_CURVE_PROGRAM_ID,
       data: instructionData,

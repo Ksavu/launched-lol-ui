@@ -1112,6 +1112,68 @@
       ]
     },
     {
+      "name": "process_graduation_funds",
+      "discriminator": [
+        126,
+        127,
+        152,
+        176,
+        85,
+        150,
+        101,
+        195
+      ],
+      "accounts": [
+        {
+          "name": "platform_authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "creator",
+          "writable": true
+        },
+        {
+          "name": "bonding_curve",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  111,
+                  110,
+                  100,
+                  105,
+                  110,
+                  103,
+                  45,
+                  99,
+                  117,
+                  114,
+                  118,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "token_mint"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_mint"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "release_dev_tokens",
       "discriminator": [
         55,
@@ -1789,6 +1851,11 @@
       "code": 6018,
       "name": "OnlyPlatform",
       "msg": "Only the platform can perform this action."
+    },
+    {
+      "code": 6019,
+      "name": "InsufficientFunds",
+      "msg": "Insufficient funds in bonding curve."
     }
   ],
   "types": [

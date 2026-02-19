@@ -761,8 +761,12 @@ const handleRequestVerification = async () => {
                     <div className="w-full bg-gray-800 rounded-full h-3">
                       <div className="bg-yellow-400 h-3 rounded-full transition-all" style={{ width: `${Math.min(token.progress, 100)}%` }} />
                     </div>
-                  </div>
+                    {token.graduated && (
+                    <p className="text-green-400 text-sm mt-2">
+      ✅ Graduated with {token.solCollected.toFixed(2)} SOL
+                    </p>               
                 )}
+                </div>
               </div>
             </div>
 
@@ -799,6 +803,7 @@ const handleRequestVerification = async () => {
                 <h2 className="text-xl sm:text-2xl font-bold text-white">Price Chart</h2>
                 <div className="flex gap-2">
                   {[
+                    { label: '5s', value: 5 },
                     { label: '1m', value: 60 },
                     { label: '5m', value: 300 },
                     { label: '15m', value: 900 },
