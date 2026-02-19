@@ -767,6 +767,7 @@ const handleRequestVerification = async () => {
                     </p>               
                 )}
                 </div>
+                )}
               </div>
             </div>
 
