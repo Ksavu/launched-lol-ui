@@ -62,6 +62,9 @@ export async function GET() {
           let isActive = false;
           let graduated = false;
           let bondingCurveStatus = 'not_found';
+          let virtualSolReserves = 0;
+          let virtualTokenReserves = 0;
+          let totalSupply = 0;
           
           try {
             const bondingCurveAccount = await connection.getAccountInfo(bondingCurve);
@@ -75,8 +78,12 @@ export async function GET() {
               if (actualDiscriminator.equals(expectedDiscriminator)) {
                 bondingCurveStatus = 'valid';
                 
+                // Read bonding curve data
+                totalSupply = Number(curveData.readBigUInt64LE(104));
                 tokensSold = Number(curveData.readBigUInt64LE(112)) / 1_000_000;
                 solCollected = Number(curveData.readBigUInt64LE(120)) / 1_000_000_000;
+                virtualSolReserves = Number(curveData.readBigUInt64LE(136)); // offset 136
+                virtualTokenReserves = Number(curveData.readBigUInt64LE(144)); // offset 144
                 
                 const rawSolCollected = Number(curveData.readBigUInt64LE(120));
                 const isGraduated = rawSolCollected >= 81_000_000_000;
@@ -114,24 +121,23 @@ export async function GET() {
             console.log('Failed to fetch SOL price, using $200');
           }
           
-          // Calculate market cap
-          const VIRTUAL_SOL = 30_000_000_000;
-          const VIRTUAL_TOKENS = 1_040_000_000_000_000;
-          const TOTAL_SUPPLY = 1_000_000_000_000_000;
-
+          // Calculate market cap using CURRENT reserves
           let marketCap = 0;
           if (bondingCurveStatus === 'valid') {
-            const solCollectedLamports = solCollected * 1_000_000_000;
-            const tokensSoldLamports = tokensSold * 1_000_000;
-
-            const currentVirtualSol = VIRTUAL_SOL + solCollectedLamports;
-            const currentVirtualTokens = VIRTUAL_TOKENS - tokensSoldLamports;
-
-            const pricePerToken = currentVirtualSol / currentVirtualTokens;
-            const marketCapLamports = pricePerToken * TOTAL_SUPPLY;
-            const marketCapSOL = marketCapLamports / 1_000_000_000;
-
-            marketCap = marketCapSOL * solPrice;
+            if (graduated) {
+              // Post-graduation: 75 SOL for 20% supply = 375 SOL total market cap
+              marketCap = 375 * solPrice;
+            } else {
+              // Pre-graduation: Use current virtual reserves
+              const currentVirtualSol = virtualSolReserves / 1e9;
+              const currentVirtualTokens = virtualTokenReserves / 1e6;
+              
+              if (currentVirtualTokens > 0) {
+                const pricePerToken = currentVirtualSol / currentVirtualTokens;
+                const TOTAL_SUPPLY = 1_000_000_000;
+                marketCap = TOTAL_SUPPLY * pricePerToken * solPrice;
+              }
+            }
           }
 
           // Check if token has any verified socials
@@ -180,6 +186,9 @@ export async function GET() {
             category: ['meme', 'ai', 'gaming', 'defi', 'nft', 'other'][category] || 'other',
             isPremium,
             verified: hasVerifiedSocials,
+            virtualSolReserves, // ✅ Added
+            virtualTokenReserves, // ✅ Added
+            totalSupply, // ✅ Added
           };
           
         } catch (error) {
