@@ -987,7 +987,11 @@ export default function TokenPage() {
                   />
                   {userTokenBalance !== null && userTokenBalance > 0 && (
                     <button
-                      onClick={() => setSellAmount(userTokenBalance.toString())}
+                      onClick={() => {
+                        // Leave 0.000001 tokens to avoid rent issues
+                        const maxSellable = Math.max(0, userTokenBalance - 0.000001);
+                        setSellAmount(maxSellable.toString());
+                      }}
                       className="absolute right-2 top-1/2 -translate-y-1/2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-3 py-1 rounded text-xs transition"
                     >
                       MAX
