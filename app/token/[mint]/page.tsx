@@ -945,51 +945,28 @@ export default function TokenPage() {
                   </button>
                 </div>
 
-                {token.bondingCurveStatus === 'valid' && token.isActive && (
-  <p className="text-gray-400 text-xs sm:text-sm mt-2">
-    {(() => {
-      try {
-        const buyAmountParsed = parseFloat(buyAmount);
-        
-        // Debug logs
-        console.log('💰 Buy Preview Debug:', {
-          buyAmount,
-          buyAmountParsed,
-          virtualSolReserves: token.virtualSolReserves,
-          virtualTokenReserves: token.virtualTokenReserves,
-        });
-        
-        if (!buyAmountParsed || buyAmountParsed <= 0) {
-          return 'Enter amount';
-        }
-        
-        const solAfterFee = buyAmountParsed * 0.99; // 1% fee
-        
-        // Use CURRENT virtual reserves from token state
-        const currentVirtualSol = token.virtualSolReserves / 1e9; // Convert lamports to SOL
-        const currentVirtualTokens = token.virtualTokenReserves / 1e6; // Convert to tokens
-        
-        console.log('📊 Reserves:', {
-          currentVirtualSol,
-          currentVirtualTokens,
-        });
-        
-        // Constant product AMM formula: x * y = k
-        const k = currentVirtualSol * currentVirtualTokens;
-        const newVirtualSol = currentVirtualSol + solAfterFee;
-        const newVirtualTokens = k / newVirtualSol;
-        const tokensReceived = currentVirtualTokens - newVirtualTokens;
-        
-        console.log('✅ You will receive:', tokensReceived / 1_000_000, 'M tokens');
-        
-        return `~${(tokensReceived / 1_000_000).toFixed(2)}M tokens`;
-      } catch (error) {
-        console.error('❌ Buy preview error:', error);
-        return 'Error calculating';
-      }
-    })()}
-  </p>
-)}
+              {token.bondingCurveStatus === 'valid' && token.isActive && (
+                <p className="text-gray-400 text-xs sm:text-sm mt-2">
+                  {(() => {
+                    const buyAmountParsed = parseFloat(buyAmount);
+                    if (!buyAmountParsed || buyAmountParsed <= 0) return 'Enter amount';
+      
+                    const solAfterFee = buyAmountParsed * 0.99; // 1% fee
+      
+                    // Use CURRENT virtual reserves from token state
+                    const currentVirtualSol = token.virtualSolReserves / 1e9; // Convert lamports to SOL
+                    const currentVirtualTokens = token.virtualTokenReserves / 1e6; // Convert to tokens
+      
+                    // Constant product AMM formula: x * y = k
+                    const k = currentVirtualSol * currentVirtualTokens;
+                    const newVirtualSol = currentVirtualSol + solAfterFee;
+                    const newVirtualTokens = k / newVirtualSol;
+                    const tokensReceived = currentVirtualTokens - newVirtualTokens;
+      
+                    return `~${(tokensReceived / 1_000_000).toFixed(2)}M tokens`;
+                  })()}
+                </p>
+              )}
             </div>
 
             <div>
