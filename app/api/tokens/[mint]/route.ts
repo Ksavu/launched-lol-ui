@@ -67,24 +67,39 @@ export async function GET(
     const tier = data[tierOffset];
     const isPremium = tier === 1;
 
-    // Parse socials (twitter, telegram, website)
-    const twitterOffset = tierOffset + 1 + 1; // tier + category
-    const twitterLength = data.readUInt32LE(twitterOffset);
-    const twitter = twitterLength > 0 
-      ? data.slice(twitterOffset + 4, twitterOffset + 4 + twitterLength).toString('utf8')
-      : undefined;
+    // Parse socials (twitter, telegram, website) - OPTIONAL, may not exist
+    let twitter: string | undefined;
+    let telegram: string | undefined;
+    let website: string | undefined;
 
-    const telegramOffset = twitterOffset + 4 + twitterLength;
-    const telegramLength = data.readUInt32LE(telegramOffset);
-    const telegram = telegramLength > 0
-      ? data.slice(telegramOffset + 4, telegramOffset + 4 + telegramLength).toString('utf8')
-      : undefined;
+    try {
+      const twitterOffset = tierOffset + 1 + 1; // tier + category
+      if (data.length > twitterOffset + 4) {
+        const twitterLength = data.readUInt32LE(twitterOffset);
+        if (twitterLength > 0 && data.length >= twitterOffset + 4 + twitterLength) {
+          twitter = data.slice(twitterOffset + 4, twitterOffset + 4 + twitterLength).toString('utf8');
+        }
 
-    const websiteOffset = telegramOffset + 4 + telegramLength;
-    const websiteLength = data.readUInt32LE(websiteOffset);
-    const website = websiteLength > 0
-      ? data.slice(websiteOffset + 4, websiteOffset + 4 + websiteLength).toString('utf8')
-      : undefined;
+        const telegramOffset = twitterOffset + 4 + twitterLength;
+        if (data.length > telegramOffset + 4) {
+          const telegramLength = data.readUInt32LE(telegramOffset);
+          if (telegramLength > 0 && data.length >= telegramOffset + 4 + telegramLength) {
+            telegram = data.slice(telegramOffset + 4, telegramOffset + 4 + telegramLength).toString('utf8');
+          }
+
+          const websiteOffset = telegramOffset + 4 + telegramLength;
+          if (data.length > websiteOffset + 4) {
+            const websiteLength = data.readUInt32LE(websiteOffset);
+            if (websiteLength > 0 && data.length >= websiteOffset + 4 + websiteLength) {
+              website = data.slice(websiteOffset + 4, websiteOffset + 4 + websiteLength).toString('utf8');
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.log('Token does not have social links (older token format)');
+      // This is fine - older tokens don't have socials
+    }
 
     // Get bonding curve data
     const [bondingCurve] = PublicKey.findProgramAddressSync(
