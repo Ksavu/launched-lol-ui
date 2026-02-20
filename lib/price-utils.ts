@@ -12,35 +12,29 @@ export async function getSolPrice(): Promise<number> {
   }
   
   try {
-    // Jupiter Price API v6 - SOL mint address
+    // CoinGecko Free API (more reliable)
     const response = await fetch(
-      'https://price.jup.ag/v6/price?ids=So11111111111111111111111111111111111111112',
-      { 
-        next: { revalidate: 60 },
-        headers: {
-          'Accept': 'application/json',
-        }
-      }
+      'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd'
     );
     
     if (!response.ok) {
-      throw new Error(`Jupiter API error: ${response.status}`);
+      throw new Error(`CoinGecko API error: ${response.status}`);
     }
     
     const data = await response.json();
-    const price = data.data?.So11111111111111111111111111111111111111112?.price;
+    const price = data.solana?.usd;
     
     if (!price || typeof price !== 'number') {
-      throw new Error('Invalid price data from Jupiter');
+      throw new Error('Invalid price data from CoinGecko');
     }
     
     cachedSolPrice = price;
     lastFetchTime = now;
     
-    console.log('✅ SOL price updated:', price);
+    console.log('✅ SOL price updated from CoinGecko:', price);
     return price;
   } catch (error) {
-    console.error('❌ Error fetching SOL price from Jupiter:', error);
+    console.error('❌ Error fetching SOL price:', error);
     // Return cached price if available, otherwise fallback to $100
     return cachedSolPrice || 100;
   }
