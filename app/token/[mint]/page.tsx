@@ -911,15 +911,8 @@ export default function TokenPage() {
             </div>
 
             {/* Trading */}
-<div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
-  {/* DEBUG - Remove after fixing */}
-  <div className="bg-red-500/20 border border-red-500 p-2 mb-4 text-xs">
-    <p className="text-white">DEBUG:</p>
-    <p className="text-gray-300">virtualSolReserves: {token.virtualSolReserves}</p>
-    <p className="text-gray-300">virtualTokenReserves: {token.virtualTokenReserves}</p>
-  </div>
-  
-  <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">Trade</h2>
+            <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">Trade</h2>
               <div className="mb-6">
                 <label className="block text-white font-semibold mb-2 text-sm sm:text-base">Buy Tokens (SOL)</label>
                 <div className="flex gap-2 sm:gap-3">
