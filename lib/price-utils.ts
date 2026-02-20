@@ -6,56 +6,56 @@ const CACHE_DURATION = 60 * 1000; // 1 minute
 export async function getSolPrice(): Promise<number> {
   const now = Date.now();
   
+  // Return cached price if still valid
   if (cachedSolPrice && (now - lastFetchTime) < CACHE_DURATION) {
     return cachedSolPrice;
   }
   
-  // Try Jupiter first
   try {
-    const jupiterResponse = await fetch(
-      'https://price.jup.ag/v6/price?ids=So11111111111111111111111111111111111111112',
-      { 
-        next: { revalidate: 60 },
-        headers: { 'Accept': 'application/json' }
-      }
-    );
-    
-    if (jupiterResponse.ok) {
-      const data = await jupiterResponse.json();
-      const price = data.data?.So11111111111111111111111111111111111111112?.price;
-      
-      if (price && typeof price === 'number') {
-        cachedSolPrice = price;
-        lastFetchTime = now;
-        console.log('✅ SOL price from Jupiter:', price);
-        return price;
-      }
-    }
-  } catch (error) {
-    console.log('⚠️ Jupiter failed, trying CoinGecko...');
-  }
-  
-  // Fallback to CoinGecko
-  try {
-    const coinGeckoResponse = await fetch(
+    // CoinGecko Free API (more reliable)
+    const response = await fetch(
       'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd'
     );
     
-    if (coinGeckoResponse.ok) {
-      const data = await coinGeckoResponse.json();
-      const price = data.solana?.usd;
-      
-      if (price && typeof price === 'number') {
-        cachedSolPrice = price;
-        lastFetchTime = now;
-        console.log('✅ SOL price from CoinGecko:', price);
-        return price;
-      }
+    if (!response.ok) {
+      throw new Error(`CoinGecko API error: ${response.status}`);
     }
+    
+    const data = await response.json();
+    const price = data.solana?.usd;
+    
+    if (!price || typeof price !== 'number') {
+      throw new Error('Invalid price data from CoinGecko');
+    }
+    
+    cachedSolPrice = price;
+    lastFetchTime = now;
+    
+    console.log('✅ SOL price updated from CoinGecko:', price);
+    return price;
   } catch (error) {
-    console.error('❌ Both APIs failed:', error);
+    console.error('❌ Error fetching SOL price:', error);
+    // Return cached price if available, otherwise fallback to $100
+    return cachedSolPrice || 100;
   }
-  
-  // Return cached or fallback
-  return cachedSolPrice || 100;
+}
+
+export function formatMarketCap(marketCap: number): string {
+  if (marketCap >= 1_000_000) {
+    return `$${(marketCap / 1_000_000).toFixed(2)}M`;
+  } else if (marketCap >= 1_000) {
+    return `$${(marketCap / 1_000).toFixed(2)}K`;
+  } else {
+    return `$${marketCap.toFixed(2)}`;
+  }
+}
+
+export function formatPrice(price: number): string {
+  if (price >= 1) {
+    return `$${price.toFixed(2)}`;
+  } else if (price >= 0.01) {
+    return `$${price.toFixed(4)}`;
+  } else {
+    return `$${price.toFixed(8)}`;
+  }
 }
