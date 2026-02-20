@@ -24,6 +24,7 @@ interface Token {
   virtualSolReserves: number;
   virtualTokenReserves: number;
   totalSupply: number;
+  verified?: boolean;
 }
 
 export default function Explore() {
