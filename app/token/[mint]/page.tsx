@@ -104,10 +104,10 @@ export default function TokenPage() {
         console.error('Error updating SOL price:', error);
       }
     };
-    
+
     fetchPrice();
     const interval = setInterval(fetchPrice, 60000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -126,7 +126,7 @@ export default function TokenPage() {
             const bondingCurvePubkey = new PublicKey(data.token.bondingCurve);
             const accountInfo = await connection.getAccountInfo(bondingCurvePubkey);
             setBondingCurveExists(accountInfo !== null);
-            
+
             if (!accountInfo) {
               console.log('🔒 Bonding curve PDA has been closed');
             }
@@ -139,16 +139,16 @@ export default function TokenPage() {
           try {
             const tradesResponse = await fetch(`/api/trades/${mint}`);
             const tradesData = await tradesResponse.json();
-            
+
             if (tradesData.trades && tradesData.trades.length > 0) {
               console.log(`📊 Found ${tradesData.trades.length} trades`);
               setTrades(tradesData.trades);
-              
+
               const { buildCandles, fillCandleGaps } = await import('../../../lib/candle-builder');
-              
+
               let candles = buildCandles(tradesData.trades, chartInterval);
               candles = fillCandleGaps(candles, chartInterval);
-              
+
               setChartData(candles);
               console.log(`📈 Built ${candles.length} candles`);
             } else {
@@ -176,7 +176,7 @@ export default function TokenPage() {
   useEffect(() => {
     const fetchHolders = async () => {
       if (!token) return;
-      
+
       try {
         const mintPubkey = new PublicKey(token.address);
         const response = await connection.getProgramAccounts(
@@ -193,7 +193,7 @@ export default function TokenPage() {
             ],
           }
         );
-        
+
         const holders = response.filter(account => {
           try {
             const amount = account.account.data.readBigUInt64LE(64);
@@ -202,13 +202,13 @@ export default function TokenPage() {
             return false;
           }
         });
-        
+
         setHolderCount(holders.length);
       } catch (error) {
         console.error('Error fetching holders:', error);
       }
     };
-    
+
     fetchHolders();
   }, [token, connection]);
 
@@ -216,7 +216,7 @@ export default function TokenPage() {
   useEffect(() => {
     const fetchHoldersList = async () => {
       if (!token) return;
-      
+
       try {
         const mintPubkey = new PublicKey(token.address);
         const response = await connection.getProgramAccounts(
@@ -233,20 +233,20 @@ export default function TokenPage() {
             ],
           }
         );
-        
+
         const TOTAL_SUPPLY_BASE_UNITS = 1_000_000_000_000_000;
-        
+
         const holders = response
           .map(account => {
             try {
               const amountBaseUnits = Number(account.account.data.readBigUInt64LE(64));
               if (amountBaseUnits === 0) return null;
-              
+
               const owner = new PublicKey(account.account.data.slice(32, 64));
               const actualTokens = amountBaseUnits / 1_000_000;
               const tokensInMillions = actualTokens / 1_000_000;
               const percentage = (amountBaseUnits / TOTAL_SUPPLY_BASE_UNITS) * 100;
-              
+
               return {
                 address: owner.toBase58(),
                 balance: tokensInMillions,
@@ -259,15 +259,15 @@ export default function TokenPage() {
           .filter(h => h !== null)
           .sort((a, b) => b!.balance - a!.balance)
           .slice(0, 20) as Holder[];
-        
+
         setHoldersList(holders);
       } catch (error) {
         console.error('Error fetching holders list:', error);
       }
     };
-    
+
     fetchHoldersList();
-    
+
     const interval = setInterval(fetchHoldersList, 30000);
     return () => clearInterval(interval);
   }, [token, connection]);
@@ -297,11 +297,11 @@ export default function TokenPage() {
       setToken((prev) =>
         prev
           ? {
-              ...prev,
-              solCollected: data.solCollected,
-              tokensSold: data.tokensSold,
-              progress: data.progress,
-            }
+            ...prev,
+            solCollected: data.solCollected,
+            tokensSold: data.tokensSold,
+            progress: data.progress,
+          }
           : null
       );
     });
@@ -329,7 +329,7 @@ export default function TokenPage() {
         );
 
         const accountInfo = await connection.getAccountInfo(associatedTokenAccount);
-        
+
         if (!accountInfo) {
           setUserTokenBalance(0);
           return;
@@ -337,7 +337,7 @@ export default function TokenPage() {
 
         const tokenAccountInfo = await connection.getTokenAccountBalance(associatedTokenAccount);
         setUserTokenBalance(tokenAccountInfo.value.uiAmount);
-        
+
       } catch (error: any) {
         if (error.message?.includes('could not find account') || error.toString().includes('Invalid param')) {
           setUserTokenBalance(0);
@@ -358,7 +358,7 @@ export default function TokenPage() {
   useEffect(() => {
     const fetchComments = async () => {
       if (!token) return;
-      
+
       try {
         const response = await fetch(`/api/comments/${token.address}`);
         const data = await response.json();
@@ -367,7 +367,7 @@ export default function TokenPage() {
         console.error('Error fetching comments:', error);
       }
     };
-    
+
     fetchComments();
     const interval = setInterval(fetchComments, 5000);
     return () => clearInterval(interval);
@@ -377,7 +377,7 @@ export default function TokenPage() {
   useEffect(() => {
     const checkVerification = async () => {
       if (!token) return;
-      
+
       try {
         const response = await fetch(`/api/verification/status/${token.address}`);
         const data = await response.json();
@@ -386,14 +386,14 @@ export default function TokenPage() {
         console.error('Error checking verification:', error);
       }
     };
-    
+
     checkVerification();
   }, [token]);
 
   // ✅ Calculate market cap
   const calculateMarketCap = () => {
     if (!token) return 0;
-    
+
     if (token.graduated) {
       // Post-graduation: Raydium pool pricing
       // 75 SOL worth for 20% of supply = 375 SOL total market cap
@@ -402,7 +402,7 @@ export default function TokenPage() {
       // Pre-graduation: Bonding curve pricing
       const solReserves = token.virtualSolReserves / 1e9;
       const tokenReserves = token.virtualTokenReserves / 1e6;
-      
+
       if (tokenReserves > 0) {
         const pricePerToken = solReserves / tokenReserves;
         const TOTAL_SUPPLY = 1_000_000_000;
@@ -419,10 +419,10 @@ export default function TokenPage() {
     try {
       const tradesResponse = await fetch(`/api/trades/${mint}`);
       const tradesData = await tradesResponse.json();
-      
+
       if (tradesData.trades && tradesData.trades.length > 0) {
         setTrades(tradesData.trades);
-        
+
         const { buildCandles, fillCandleGaps } = await import('../../../lib/candle-builder');
         let candles = buildCandles(tradesData.trades, chartInterval);
         candles = fillCandleGaps(candles, chartInterval);
@@ -456,9 +456,9 @@ export default function TokenPage() {
       const response = await fetch(`/api/tokens/${mint}`);
       const data = await response.json();
       if (data.token) setToken(data.token);
-      
+
       await refreshTradesAndChart();
-      
+
     } catch (error) {
       console.error(error);
       alert(`Error: ${error}`);
@@ -490,9 +490,9 @@ export default function TokenPage() {
       const response = await fetch(`/api/tokens/${mint}`);
       const data = await response.json();
       if (data.token) setToken(data.token);
-      
+
       await refreshTradesAndChart();
-      
+
     } catch (error: any) {
       console.error(error);
       alert(`Error: ${error.message || error.toString()}`);
@@ -503,7 +503,7 @@ export default function TokenPage() {
 
   const handlePostComment = async () => {
     if (!connected || !publicKey || !commentMessage.trim()) return;
-    
+
     try {
       const response = await fetch(`/api/comments/${token!.address}`, {
         method: 'POST',
@@ -513,7 +513,7 @@ export default function TokenPage() {
           message: commentMessage.trim(),
         }),
       });
-      
+
       if (response.ok) {
         setCommentMessage('');
         const data = await fetch(`/api/comments/${token!.address}`);
@@ -527,12 +527,12 @@ export default function TokenPage() {
 
   const handleRequestVerification = async () => {
     if (!connected || !publicKey || !token) return;
-    
+
     setTrading(true);
     try {
       const { registerSocial, generateVerificationCode, SocialPlatform } = await import('../../../lib/social-registry-client');
       const wallet = { publicKey, signTransaction, signAllTransactions };
-      
+
       if (token.twitter) {
         const verificationCode = generateVerificationCode();
         await registerSocial(
@@ -544,7 +544,7 @@ export default function TokenPage() {
           verificationCode
         );
       }
-      
+
       if (token.telegram) {
         const verificationCode = generateVerificationCode();
         await registerSocial(
@@ -556,7 +556,7 @@ export default function TokenPage() {
           verificationCode
         );
       }
-      
+
       if (token.website) {
         const verificationCode = generateVerificationCode();
         await registerSocial(
@@ -568,13 +568,13 @@ export default function TokenPage() {
           verificationCode
         );
       }
-      
+
       alert('✅ Verification request submitted! Our team will review and verify your socials within 24-48 hours.');
-      
+
       const response = await fetch(`/api/verification/status/${token.address}`);
       const data = await response.json();
       setVerificationStatus(data);
-      
+
     } catch (error: any) {
       alert(`Error: ${error.message}`);
     } finally {
@@ -587,7 +587,7 @@ export default function TokenPage() {
       alert('Please connect wallet!');
       return;
     }
-    
+
     if (token.creator !== publicKey.toBase58()) {
       alert('Only the creator can claim dev tokens!');
       return;
@@ -597,28 +597,28 @@ export default function TokenPage() {
       alert('❌ Bonding curve PDA has been closed. Dev tokens can no longer be claimed.');
       return;
     }
-    
+
     setTrading(true);
     try {
       const { releaseDevTokens } = await import('../../../lib/bonding-curve-client');
       const wallet = { publicKey, signTransaction, signAllTransactions };
-      
+
       const tx = await releaseDevTokens(
         connection,
         wallet,
         token.address
       );
-      
+
       alert(
         `🎉 Success!\n\n` +
         `You claimed 30M dev tokens!\n\n` +
         `TX: https://solscan.io/tx/${tx}?cluster=devnet`
       );
-      
+
       const response = await fetch(`/api/tokens/${mint}`);
       const data = await response.json();
       if (data.token) setToken(data.token);
-      
+
     } catch (error: any) {
       console.error(error);
       alert(`Error: ${error.message || error.toString()}`);
@@ -630,7 +630,7 @@ export default function TokenPage() {
   // Calculate stats
   const last24hTrades = trades.filter(t => t.timestamp > Date.now() / 1000 - 86400);
   const volume24h = last24hTrades.reduce((sum, t) => sum + t.sol, 0);
-  
+
   let priceChange24h = 0;
   if (last24hTrades.length >= 2) {
     const oldPrice = last24hTrades[0].price;
@@ -668,6 +668,7 @@ export default function TokenPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+
           {/* Left Column */}
           <div className="lg:col-span-1 space-y-6">
             <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-gray-900">
@@ -689,12 +690,12 @@ export default function TokenPage() {
                     className="flex items-center gap-2 bg-black/50 hover:bg-black border border-gray-700 hover:border-yellow-400 rounded-lg px-3 py-2 transition"
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                     </svg>
                     <span className="text-white text-sm">X</span>
                   </a>
                 )}
-                
+
                 {token.telegram && (
                   <a
                     href={token.telegram}
@@ -703,12 +704,12 @@ export default function TokenPage() {
                     className="flex items-center gap-2 bg-black/50 hover:bg-black border border-gray-700 hover:border-yellow-400 rounded-lg px-3 py-2 transition"
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.461-1.901-.903-1.056-.692-1.653-1.123-2.678-1.799-1.185-.781-.417-1.21.258-1.911.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.242-1.865-.442-.752-.244-1.349-.374-1.297-.789.027-.216.324-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635.099-.002.321.023.465.141.121.099.154.232.17.326.016.094.036.308.02.475z"/>
+                      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.461-1.901-.903-1.056-.692-1.653-1.123-2.678-1.799-1.185-.781-.417-1.21.258-1.911.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.242-1.865-.442-.752-.244-1.349-.374-1.297-.789.027-.216.324-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635.099-.002.321.023.465.141.121.099.154.232.17.326.016.094.036.308.02.475z" />
                     </svg>
                     <span className="text-white text-sm">Telegram</span>
                   </a>
                 )}
-                
+
                 {token.website && (
                   <a
                     href={token.website}
@@ -717,9 +718,9 @@ export default function TokenPage() {
                     className="flex items-center gap-2 bg-black/50 hover:bg-black border border-gray-700 hover:border-yellow-400 rounded-lg px-3 py-2 transition"
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="10"/>
-                      <line x1="2" y1="12" x2="22" y2="12"/>
-                      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="2" y1="12" x2="22" y2="12" />
+                      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                     </svg>
                     <span className="text-white text-sm">Website</span>
                   </a>
@@ -728,55 +729,55 @@ export default function TokenPage() {
             )}
 
             {/* Request Verification */}
-            {connected && 
-             publicKey && 
-             token.creator === publicKey.toBase58() && 
-             (token.twitter || token.telegram || token.website) && (
-              <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl p-6 border-2 border-blue-400 mb-6">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                      </svg>
+            {connected &&
+              publicKey &&
+              token.creator === publicKey.toBase58() &&
+              (token.twitter || token.telegram || token.website) && (
+                <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl p-6 border-2 border-blue-400 mb-6">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold text-white mb-2">🔐 Get Verified</h3>
+                      <p className="text-gray-300 text-sm mb-4">
+                        Prove your social accounts are authentic. Verified accounts get a blue checkmark badge,
+                        helping users identify the official project.
+                      </p>
+
+                      {verificationStatus?.verified ? (
+                        <div className="bg-green-500/20 border border-green-400 rounded-lg p-4">
+                          <p className="text-green-400 font-bold">✅ Verified Accounts:</p>
+                          <ul className="text-green-300 text-sm mt-2">
+                            {verificationStatus.platforms.map(platform => (
+                              <li key={platform}>• {platform}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : verificationStatus?.pending ? (
+                        <div className="bg-yellow-500/20 border border-yellow-400 rounded-lg p-4">
+                          <p className="text-yellow-400 font-bold">⏳ Verification Pending</p>
+                          <p className="text-yellow-300 text-sm mt-1">
+                            Our team will review your request.
+                          </p>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={handleRequestVerification}
+                          disabled={trading}
+                          className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 text-white font-bold px-6 py-3 rounded-lg transition"
+                        >
+                          {trading ? 'Submitting...' : 'Request Verification'}
+                        </button>
+                      )}
                     </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-white mb-2">🔐 Get Verified</h3>
-                    <p className="text-gray-300 text-sm mb-4">
-                      Prove your social accounts are authentic. Verified accounts get a blue checkmark badge, 
-                      helping users identify the official project.
-                    </p>
-                    
-                    {verificationStatus?.verified ? (
-                      <div className="bg-green-500/20 border border-green-400 rounded-lg p-4">
-                        <p className="text-green-400 font-bold">✅ Verified Accounts:</p>
-                        <ul className="text-green-300 text-sm mt-2">
-                          {verificationStatus.platforms.map(platform => (
-                            <li key={platform}>• {platform}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : verificationStatus?.pending ? (
-                      <div className="bg-yellow-500/20 border border-yellow-400 rounded-lg p-4">
-                        <p className="text-yellow-400 font-bold">⏳ Verification Pending</p>
-                        <p className="text-yellow-300 text-sm mt-1">
-                          Our team will review your request.
-                        </p>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={handleRequestVerification}
-                        disabled={trading}
-                        className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 text-white font-bold px-6 py-3 rounded-lg transition"
-                      >
-                        {trading ? 'Submitting...' : 'Request Verification'}
-                      </button>
-                    )}
-                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Token Info */}
             <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
@@ -784,12 +785,12 @@ export default function TokenPage() {
                 <h1 className="text-2xl sm:text-3xl font-bold text-white">{token.name}</h1>
                 {token.verified && (
                   <svg className="w-6 h-6 text-blue-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                    <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                 )}
               </div>
               <p className="text-gray-400 text-base sm:text-lg mb-4">${token.symbol}</p>
-              
+
               {/* Bonding Curve Status Indicator */}
               {token.graduated && (
                 <div className="mt-2 mb-4">
@@ -806,7 +807,7 @@ export default function TokenPage() {
                   )}
                 </div>
               )}
-              
+
               {token.description && <p className="text-gray-300 mb-6 text-sm sm:text-base">{token.description}</p>}
 
               <div className="space-y-3 sm:space-y-4">
@@ -834,11 +835,10 @@ export default function TokenPage() {
                 </div>
                 <div className="flex justify-between text-sm sm:text-base">
                   <span className="text-gray-400">Status</span>
-                  <span className={`font-semibold ${
-                    token.bondingCurveStatus === 'not_found' ? 'text-gray-400' :
-                    token.bondingCurveStatus === 'corrupted' ? 'text-red-400' :
-                    token.isActive ? 'text-green-400' : 'text-yellow-400'
-                  }`}>
+                  <span className={`font-semibold ${token.bondingCurveStatus === 'not_found' ? 'text-gray-400' :
+                      token.bondingCurveStatus === 'corrupted' ? 'text-red-400' :
+                        token.isActive ? 'text-green-400' : 'text-yellow-400'
+                    }`}>
                     {token.bondingCurveStatus === 'not_found' && '⏳ Not Initialized'}
                     {token.bondingCurveStatus === 'corrupted' && '⚠️ Corrupted'}
                     {token.bondingCurveStatus === 'valid' && token.isActive && '🟢 Active'}
@@ -878,9 +878,9 @@ export default function TokenPage() {
                           </span>
                         </div>
                         <div className="w-full bg-gray-800 rounded-full h-3 mb-4">
-                          <div 
-                            className="bg-gradient-to-r from-yellow-400 to-yellow-600 h-3 rounded-full transition-all" 
-                            style={{ width: `${Math.min(token.progress, 100)}%` }} 
+                          <div
+                            className="bg-gradient-to-r from-yellow-400 to-yellow-600 h-3 rounded-full transition-all"
+                            style={{ width: `${Math.min(token.progress, 100)}%` }}
                           />
                         </div>
                         <div className="flex justify-between text-sm">
@@ -928,7 +928,7 @@ export default function TokenPage() {
             </div>
           </div>
 
-{/* Right Column */}
+          {/* Right Column */}
           <div className="lg:col-span-2 space-y-6 lg:space-y-8">
             {/* Chart */}
             <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
@@ -945,9 +945,8 @@ export default function TokenPage() {
                     <button
                       key={interval.value}
                       onClick={() => setChartInterval(interval.value as any)}
-                      className={`px-3 py-1 rounded text-sm font-semibold transition ${
-                        chartInterval === interval.value ? 'bg-yellow-400 text-black' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                      }`}
+                      className={`px-3 py-1 rounded text-sm font-semibold transition ${chartInterval === interval.value ? 'bg-yellow-400 text-black' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                        }`}
                     >
                       {interval.label}
                     </button>
@@ -957,125 +956,169 @@ export default function TokenPage() {
               <TradingViewChart data={chartData} />
             </div>
 
-            {/* Trading */}
-            <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
-              <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">Trade</h2>
-              <div className="mb-6">
-                <label className="block text-white font-semibold mb-2 text-sm sm:text-base">Buy Tokens (SOL)</label>
-                <div className="flex gap-2 sm:gap-3">
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0.01"
-                    value={buyAmount}
-                    onChange={(e) => setBuyAmount(e.target.value)}
-                    className="flex-1 bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white outline-none text-sm sm:text-base"
-                    placeholder="SOL"
-                    disabled={token.bondingCurveStatus !== 'valid' || !token.isActive}
-                  />
-                  <button
-                    onClick={handleBuy}
-                    disabled={trading || !connected || token.bondingCurveStatus !== 'valid' || !token.isActive}
-                    className={`font-bold px-4 sm:px-8 py-2 sm:py-3 rounded-lg transition text-sm sm:text-base whitespace-nowrap ${
-                      token.bondingCurveStatus === 'valid' && token.isActive ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-600 cursor-not-allowed'
-                    } text-white`}
-                  >
-                    {token.bondingCurveStatus !== 'valid' ? 'Not Available' : !token.isActive ? 'Trading Paused' : trading ? 'Buying...' : 'Buy'}
-                  </button>
-                </div>
-                {token.bondingCurveStatus === 'valid' && token.isActive && (
-                  <p className="text-gray-400 text-xs sm:text-sm mt-2">
-                    {(() => {
-                      const buyAmountParsed = parseFloat(buyAmount);
-                      if (!buyAmountParsed || buyAmountParsed <= 0) return 'Enter amount';
-                      
-                      const solAfterFee = buyAmountParsed * 0.99; // 1% fee
-                      
-                      // Use CURRENT virtual reserves from token state
-                      const currentVirtualSol = token.virtualSolReserves / 1e9;
-                      const currentVirtualTokens = token.virtualTokenReserves / 1e6;
-                      
-                      // Constant product AMM formula: x * y = k
-                      const k = currentVirtualSol * currentVirtualTokens;
-                      const newVirtualSol = currentVirtualSol + solAfterFee;
-                      const newVirtualTokens = k / newVirtualSol;
-                      const tokensReceived = currentVirtualTokens - newVirtualTokens;
-                      
-                      return `~${(tokensReceived / 1_000_000).toFixed(2)}M tokens`;
-                    })()}
-                  </p>
-                )}
-              </div>
+            {/* Trading Section */}
+            {token.graduated ? (
+              // Graduated - Show Raydium Link
+              <div className="bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-xl p-6 border-2 border-green-400">
+                <h2 className="text-2xl font-bold text-white mb-3">🎓 Token Graduated to Raydium!</h2>
+                <p className="text-gray-300 mb-4">
+                  This token successfully raised 81 SOL and has graduated from the bonding curve.
+                  Trading is now available on Raydium DEX with permanent liquidity.
+                </p>
 
-              <div>
-                <label className="block text-white font-semibold mb-2 text-sm sm:text-base">
-                  Sell Tokens
-                </label>
-                <div className="flex gap-2 sm:gap-3">
-                  <div className="flex-1 relative">
+                <div className="bg-black/50 rounded-lg p-4 mb-4">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-400">Total Raised</p>
+                      <p className="text-white font-bold text-lg">81.00 SOL</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Liquidity Pool</p>
+                      <p className="text-white font-bold text-lg">75 SOL + 200M Tokens</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Market Cap</p>
+                      <p className="text-white font-bold text-lg">{formatMarketCap(marketCap)}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">DEX</p>
+                      <p className="text-purple-400 font-bold text-lg">Raydium</p>
+                    </div>
+                  </div>
+                </div>
+
+                <a
+                  href={`https://raydium.io/swap/?inputCurrency=sol&outputCurrency=${token.address}&cluster=devnet`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-bold py-4 rounded-lg transition text-center text-lg"
+                >
+                  🏊 Trade on Raydium →
+                </a>
+
+                <p className="text-gray-400 text-xs text-center mt-3">
+                  Bonding curve trading is closed. All trading happens on Raydium.
+                </p>
+              </div>
+            ) : (
+              // Active Bonding Curve - Show Trading Interface
+              <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
+                <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">Trade</h2>
+                <div className="mb-6">
+                  <label className="block text-white font-semibold mb-2 text-sm sm:text-base">Buy Tokens (SOL)</label>
+                  <div className="flex gap-2 sm:gap-3">
                     <input
                       type="number"
-                      step="1"
-                      min="1"
-                      value={sellAmount}
-                      onChange={(e) => setSellAmount(e.target.value)}
-                      className="w-full bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white outline-none text-sm sm:text-base pr-16"
-                      placeholder="Amount"
+                      step="0.1"
+                      min="0.01"
+                      value={buyAmount}
+                      onChange={(e) => setBuyAmount(e.target.value)}
+                      className="flex-1 bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white outline-none text-sm sm:text-base"
+                      placeholder="SOL"
                       disabled={token.bondingCurveStatus !== 'valid' || !token.isActive}
                     />
-                    {userTokenBalance !== null && userTokenBalance > 0 && (
-                      <button
-                        onClick={() => {
-                          // Leave 0.000001 tokens to avoid rent issues
-                          const maxSellable = Math.max(0, userTokenBalance - 0.000001);
-                          setSellAmount(maxSellable.toString());
-                        }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-3 py-1 rounded text-xs transition"
-                      >
-                        MAX
-                      </button>
-                    )}
+                    <button
+                      onClick={handleBuy}
+                      disabled={trading || !connected || token.bondingCurveStatus !== 'valid' || !token.isActive}
+                      className={`font-bold px-4 sm:px-8 py-2 sm:py-3 rounded-lg transition text-sm sm:text-base whitespace-nowrap ${token.bondingCurveStatus === 'valid' && token.isActive ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-600 cursor-not-allowed'
+                        } text-white`}
+                    >
+                      {token.bondingCurveStatus !== 'valid' ? 'Not Available' : !token.isActive ? 'Trading Paused' : trading ? 'Buying...' : 'Buy'}
+                    </button>
                   </div>
-                  <button
-                    onClick={handleSell}
-                    disabled={
-                      trading || 
-                      !connected || 
-                      token.bondingCurveStatus !== 'valid' ||
-                      !token.isActive ||
-                      parseFloat(sellAmount) <= 0 || 
-                      parseFloat(sellAmount) > (userTokenBalance || 0)
-                    }
-                    className={`font-bold px-4 sm:px-8 py-2 sm:py-3 rounded-lg transition text-sm sm:text-base whitespace-nowrap ${
-                      token.bondingCurveStatus === 'valid' && token.isActive
-                        ? 'bg-red-500 hover:bg-red-600'
-                        : 'bg-gray-600 cursor-not-allowed'
-                    } text-white`}
-                  >
-                    {token.bondingCurveStatus !== 'valid' 
-                      ? 'Not Available' 
-                      : !token.isActive
-                      ? 'Trading Paused'
-                      : trading 
-                        ? 'Selling...' 
-                        : 'Sell'}
-                  </button>
-                </div>
-                {userTokenBalance !== null && token.bondingCurveStatus === 'valid' && (
-                  <p className="text-gray-400 text-xs sm:text-sm mt-2">
-                    Balance: {userTokenBalance.toLocaleString()} {token.symbol}
-                  </p>
-                )}
-              </div>
-            </div>
+                  {token.bondingCurveStatus === 'valid' && token.isActive && (
+                    <p className="text-gray-400 text-xs sm:text-sm mt-2">
+                      {(() => {
+                        const buyAmountParsed = parseFloat(buyAmount);
+                        if (!buyAmountParsed || buyAmountParsed <= 0) return 'Enter amount';
 
-            {/* ✅ CLAIM DEV TOKENS - UPDATED SECTION */}
-            {connected && 
-             publicKey && 
-             token.creator === publicKey.toBase58() && 
-             token.graduated && (
-              bondingCurveExists ? (
-                // Bonding curve still exists - can claim
+                        const solAfterFee = buyAmountParsed * 0.99; // 1% fee
+
+                        // Use CURRENT virtual reserves from token state
+                        const currentVirtualSol = token.virtualSolReserves / 1e9;
+                        const currentVirtualTokens = token.virtualTokenReserves / 1e6;
+
+                        // Constant product AMM formula: x * y = k
+                        const k = currentVirtualSol * currentVirtualTokens;
+                        const newVirtualSol = currentVirtualSol + solAfterFee;
+                        const newVirtualTokens = k / newVirtualSol;
+                        const tokensReceived = currentVirtualTokens - newVirtualTokens;
+
+                        return `~${(tokensReceived / 1_000_000).toFixed(2)}M tokens`;
+                      })()}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-white font-semibold mb-2 text-sm sm:text-base">
+                    Sell Tokens
+                  </label>
+                  <div className="flex gap-2 sm:gap-3">
+                    <div className="flex-1 relative">
+                      <input
+                        type="number"
+                        step="1"
+                        min="1"
+                        value={sellAmount}
+                        onChange={(e) => setSellAmount(e.target.value)}
+                        className="w-full bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white outline-none text-sm sm:text-base pr-16"
+                        placeholder="Amount"
+                        disabled={token.bondingCurveStatus !== 'valid' || !token.isActive}
+                      />
+                      {userTokenBalance !== null && userTokenBalance > 0 && token.isActive && (
+                        <button
+                          onClick={() => {
+                            // Leave 0.000001 tokens to avoid rent issues
+                            const maxSellable = Math.max(0, userTokenBalance - 0.000001);
+                            setSellAmount(maxSellable.toString());
+                          }}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-3 py-1 rounded text-xs transition"
+                        >
+                          MAX
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      onClick={handleSell}
+                      disabled={
+                        trading ||
+                        !connected ||
+                        token.bondingCurveStatus !== 'valid' ||
+                        !token.isActive ||
+                        parseFloat(sellAmount) <= 0 ||
+                        parseFloat(sellAmount) > (userTokenBalance || 0)
+                      }
+                      className={`font-bold px-4 sm:px-8 py-2 sm:py-3 rounded-lg transition text-sm sm:text-base whitespace-nowrap ${token.bondingCurveStatus === 'valid' && token.isActive
+                          ? 'bg-red-500 hover:bg-red-600'
+                          : 'bg-gray-600 cursor-not-allowed'
+                        } text-white`}
+                    >
+                      {token.bondingCurveStatus !== 'valid'
+                        ? 'Not Available'
+                        : !token.isActive
+                          ? 'Trading Paused'
+                          : trading
+                            ? 'Selling...'
+                            : 'Sell'}
+                    </button>
+                  </div>
+                  {userTokenBalance !== null && token.bondingCurveStatus === 'valid' && (
+                    <p className="text-gray-400 text-xs sm:text-sm mt-2">
+                      Balance: {userTokenBalance.toLocaleString()} {token.symbol}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ✅ CLAIM DEV TOKENS - Updated for graduated tokens */}
+            {connected &&
+              publicKey &&
+              token.creator === publicKey.toBase58() &&
+              token.graduated &&
+              token.isActive && (
+                // Bonding curve still active - can claim
                 <div className="bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 rounded-xl p-6 border-2 border-yellow-400">
                   <h3 className="text-2xl font-bold text-white mb-3">🎁 Claim Your Dev Tokens</h3>
                   <p className="text-gray-300 mb-4">
@@ -1084,7 +1127,7 @@ export default function TokenPage() {
                   <div className="bg-red-500/20 border border-red-500 rounded-lg p-4 mb-4">
                     <p className="text-red-400 font-bold text-sm">⚠️ URGENT - CLAIM IMMEDIATELY!</p>
                     <p className="text-gray-300 text-xs mt-2">
-                      Platform can process graduation funds at any time. Once processed, the bonding curve PDA is permanently closed and dev tokens can NO LONGER be claimed.
+                      Platform can process graduation funds at any time. Once processed, dev tokens can NO LONGER be claimed.
                     </p>
                     <p className="text-orange-400 text-xs mt-1 font-bold">
                       Unclaimed tokens will be transferred to platform!
@@ -1098,41 +1141,23 @@ export default function TokenPage() {
                     {trading ? 'Claiming...' : '🎁 CLAIM 30M DEV TOKENS NOW'}
                   </button>
                 </div>
-              ) : (
-                // Bonding curve closed - too late
-                <div className="bg-red-500/20 border-2 border-red-500 rounded-xl p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0">
-                      <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center">
-                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd"/>
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold text-red-400 mb-2">❌ Dev Tokens No Longer Claimable</h3>
-                      <p className="text-gray-300 mb-3 text-sm">
-                        The bonding curve PDA has been permanently closed. Graduation funds have been processed and the Raydium pool has been created.
-                      </p>
-                      <div className="bg-black/50 rounded-lg p-3 mb-3">
-                        <p className="text-gray-400 text-xs mb-2">What happened:</p>
-                        <ul className="text-gray-400 text-xs space-y-1 list-disc list-inside">
-                          <li>Token graduated (reached 81 SOL)</li>
-                          <li>Platform processed graduation funds</li>
-                          <li>Bonding curve PDA was closed</li>
-                          <li>Unclaimed dev tokens were transferred to platform</li>
-                        </ul>
-                      </div>
-                      <p className="text-gray-500 text-xs">
-                        If you believe this was an error, please contact platform support with your token address.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )
-            )}
+              )}
 
-         {/* Transactions */}
+            {/* Dev tokens already processed */}
+            {connected &&
+              publicKey &&
+              token.creator === publicKey.toBase58() &&
+              token.graduated &&
+              !token.isActive && (
+                <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
+                  <h3 className="text-xl font-bold text-gray-400 mb-2">Developer Allocation</h3>
+                  <p className="text-gray-500 text-sm">
+                    Graduation funds have been processed. Dev tokens were either claimed or transferred to platform.
+                  </p>
+                </div>
+              )}
+
+            {/* Transactions */}
             <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
               <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">Recent Transactions</h2>
               {trades.length === 0 ? (
@@ -1145,7 +1170,7 @@ export default function TokenPage() {
                         <div className={`px-2 py-1 rounded text-xs font-bold ${trade.type === 'buy' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                           {trade.type.toUpperCase()}
                         </div>
-            
+
                         <div>
                           <div className="flex items-center gap-2">
                             <p className="text-white font-semibold">{trade.tokens.toFixed(2)}M tokens</p>
@@ -1208,7 +1233,7 @@ export default function TokenPage() {
             {/* Dev Activity */}
             <div className="bg-gray-900 rounded-xl p-4 border-2 border-gray-800">
               <h3 className="text-white font-semibold mb-3">Creator Activity</h3>
-              
+
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">Creator</span>
@@ -1221,14 +1246,14 @@ export default function TokenPage() {
                     {token.creator.slice(0, 4)}...{token.creator.slice(-4)}
                   </a>
                 </div>
-                
+
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">Dev Trades</span>
                   <span className="text-white font-semibold">
                     {trades.filter(t => t.user === token.creator).length}
                   </span>
                 </div>
-                
+
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">Dev Holdings</span>
                   <span className="text-white font-semibold">
@@ -1244,7 +1269,7 @@ export default function TokenPage() {
             {/* Comments Section */}
             <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
               <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">💬 Community Chat</h2>
-              
+
               <div className="space-y-3 max-h-[400px] overflow-y-auto mb-4">
                 {comments.length === 0 ? (
                   <p className="text-gray-400 text-center py-8">No comments yet. Be the first!</p>
@@ -1271,7 +1296,7 @@ export default function TokenPage() {
                   ))
                 )}
               </div>
-              
+
               {connected ? (
                 <div className="flex gap-2">
                   <input
