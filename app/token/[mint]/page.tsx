@@ -92,6 +92,7 @@ export default function TokenPage() {
     platforms: string[];
   } | null>(null);
   const [solPrice, setSolPrice] = useState(100);
+  const [bondingCurveExists, setBondingCurveExists] = useState(true); // ✅ NEW
 
   // ✅ Fetch SOL price
   useEffect(() => {
@@ -109,6 +110,67 @@ export default function TokenPage() {
     
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch initial token data AND trades AND check if bonding curve exists
+  useEffect(() => {
+    const fetchTokenData = async () => {
+      try {
+        const response = await fetch(`/api/tokens/${mint}`);
+        if (!response.ok) throw new Error('Token not found');
+        const data = await response.json();
+        setToken(data.token || null);
+
+        if (data.token) {
+          // ✅ Check if bonding curve PDA still exists
+          try {
+            const bondingCurvePubkey = new PublicKey(data.token.bondingCurve);
+            const accountInfo = await connection.getAccountInfo(bondingCurvePubkey);
+            setBondingCurveExists(accountInfo !== null);
+            
+            if (!accountInfo) {
+              console.log('🔒 Bonding curve PDA has been closed');
+            }
+          } catch (error) {
+            console.error('Error checking bonding curve:', error);
+            setBondingCurveExists(false);
+          }
+
+          // Fetch trades
+          try {
+            const tradesResponse = await fetch(`/api/trades/${mint}`);
+            const tradesData = await tradesResponse.json();
+            
+            if (tradesData.trades && tradesData.trades.length > 0) {
+              console.log(`📊 Found ${tradesData.trades.length} trades`);
+              setTrades(tradesData.trades);
+              
+              const { buildCandles, fillCandleGaps } = await import('../../../lib/candle-builder');
+              
+              let candles = buildCandles(tradesData.trades, chartInterval);
+              candles = fillCandleGaps(candles, chartInterval);
+              
+              setChartData(candles);
+              console.log(`📈 Built ${candles.length} candles`);
+            } else {
+              console.log('No trades yet');
+              setChartData([]);
+              setTrades([]);
+            }
+          } catch (tradeError) {
+            console.error('Error fetching trades:', tradeError);
+            setChartData([]);
+            setTrades([]);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching token:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTokenData();
+  }, [mint, chartInterval, connection]);
 
   // Fetch holder count
   useEffect(() => {
@@ -291,52 +353,6 @@ export default function TokenPage() {
 
     return () => clearInterval(interval);
   }, [publicKey, token, connection]);
-
-  // Fetch initial token data AND trades
-  useEffect(() => {
-    const fetchTokenData = async () => {
-      try {
-        const response = await fetch(`/api/tokens/${mint}`);
-        if (!response.ok) throw new Error('Token not found');
-        const data = await response.json();
-        setToken(data.token || null);
-
-        if (data.token) {
-          try {
-            const tradesResponse = await fetch(`/api/trades/${mint}`);
-            const tradesData = await tradesResponse.json();
-            
-            if (tradesData.trades && tradesData.trades.length > 0) {
-              console.log(`📊 Found ${tradesData.trades.length} trades`);
-              setTrades(tradesData.trades);
-              
-              const { buildCandles, fillCandleGaps } = await import('../../../lib/candle-builder');
-              
-              let candles = buildCandles(tradesData.trades, chartInterval);
-              candles = fillCandleGaps(candles, chartInterval);
-              
-              setChartData(candles);
-              console.log(`📈 Built ${candles.length} candles`);
-            } else {
-              console.log('No trades yet');
-              setChartData([]);
-              setTrades([]);
-            }
-          } catch (tradeError) {
-            console.error('Error fetching trades:', tradeError);
-            setChartData([]);
-            setTrades([]);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching token:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTokenData();
-  }, [mint, chartInterval]);
 
   // Fetch comments
   useEffect(() => {
@@ -576,6 +592,11 @@ export default function TokenPage() {
       alert('Only the creator can claim dev tokens!');
       return;
     }
+
+    if (!bondingCurveExists) {
+      alert('❌ Bonding curve PDA has been closed. Dev tokens can no longer be claimed.');
+      return;
+    }
     
     setTrading(true);
     try {
@@ -740,7 +761,7 @@ export default function TokenPage() {
                       <div className="bg-yellow-500/20 border border-yellow-400 rounded-lg p-4">
                         <p className="text-yellow-400 font-bold">⏳ Verification Pending</p>
                         <p className="text-yellow-300 text-sm mt-1">
-                          Our team will review your request within 24-48 hours.
+                          Our team will review your request.
                         </p>
                       </div>
                     ) : (
@@ -768,6 +789,24 @@ export default function TokenPage() {
                 )}
               </div>
               <p className="text-gray-400 text-base sm:text-lg mb-4">${token.symbol}</p>
+              
+              {/* Bonding Curve Status Indicator */}
+              {token.graduated && (
+                <div className="mt-2 mb-4">
+                  {bondingCurveExists ? (
+                    <div className="inline-flex items-center gap-2 bg-yellow-500/20 border border-yellow-500 rounded-full px-3 py-1">
+                      <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                      <span className="text-yellow-400 text-xs font-bold">Dev Claim Available</span>
+                    </div>
+                  ) : (
+                    <div className="inline-flex items-center gap-2 bg-gray-700/20 border border-gray-600 rounded-full px-3 py-1">
+                      <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                      <span className="text-gray-500 text-xs font-bold">Bonding Curve Closed</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              
               {token.description && <p className="text-gray-300 mb-6 text-sm sm:text-base">{token.description}</p>}
 
               <div className="space-y-3 sm:space-y-4">
@@ -889,7 +928,7 @@ export default function TokenPage() {
             </div>
           </div>
 
-          {/* Right Column */}
+{/* Right Column */}
           <div className="lg:col-span-2 space-y-6 lg:space-y-8">
             {/* Chart */}
             <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
@@ -944,94 +983,156 @@ export default function TokenPage() {
                     {token.bondingCurveStatus !== 'valid' ? 'Not Available' : !token.isActive ? 'Trading Paused' : trading ? 'Buying...' : 'Buy'}
                   </button>
                 </div>
-
-              {token.bondingCurveStatus === 'valid' && token.isActive && (
-                <p className="text-gray-400 text-xs sm:text-sm mt-2">
-                  {(() => {
-                    const buyAmountParsed = parseFloat(buyAmount);
-                    if (!buyAmountParsed || buyAmountParsed <= 0) return 'Enter amount';
-      
-                    const solAfterFee = buyAmountParsed * 0.99; // 1% fee
-      
-                    // Use CURRENT virtual reserves from token state
-                    const currentVirtualSol = token.virtualSolReserves / 1e9; // Convert lamports to SOL
-                    const currentVirtualTokens = token.virtualTokenReserves / 1e6; // Convert to tokens
-      
-                    // Constant product AMM formula: x * y = k
-                    const k = currentVirtualSol * currentVirtualTokens;
-                    const newVirtualSol = currentVirtualSol + solAfterFee;
-                    const newVirtualTokens = k / newVirtualSol;
-                    const tokensReceived = currentVirtualTokens - newVirtualTokens;
-      
-                    return `~${(tokensReceived / 1_000_000).toFixed(2)}M tokens`;
-                  })()}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-white font-semibold mb-2 text-sm sm:text-base">
-                Sell Tokens
-              </label>
-              <div className="flex gap-2 sm:gap-3">
-                <div className="flex-1 relative">
-                  <input
-                   type="number"
-                   step="1"
-                   min="1"
-                   value={sellAmount}
-                   onChange={(e) => setSellAmount(e.target.value)}
-                   className="w-full bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white outline-none text-sm sm:text-base pr-16"
-                   placeholder="Amount"
-                   disabled={token.bondingCurveStatus !== 'valid' || !token.isActive}
-                  />
-                  {userTokenBalance !== null && userTokenBalance > 0 && (
-                    <button
-                      onClick={() => {
-                        // Leave 0.000001 tokens to avoid rent issues
-                        const maxSellable = Math.max(0, userTokenBalance - 0.000001);
-                        setSellAmount(maxSellable.toString());
-                      }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-3 py-1 rounded text-xs transition"
-                    >
-                      MAX
-                    </button>
-                  )}
-                </div>
-                <button
-                  onClick={handleSell}
-                  disabled={
-                    trading || 
-                    !connected || 
-                    token.bondingCurveStatus !== 'valid' ||
-                    !token.isActive ||
-                    parseFloat(sellAmount) <= 0 || 
-                    parseFloat(sellAmount) > (userTokenBalance || 0)
-                  }
-                  className={`font-bold px-4 sm:px-8 py-2 sm:py-3 rounded-lg transition text-sm sm:text-base whitespace-nowrap ${
-                    token.bondingCurveStatus === 'valid' && token.isActive
-                      ? 'bg-red-500 hover:bg-red-600'
-                      : 'bg-gray-600 cursor-not-allowed'
-                  } text-white`}
-                >
-                  {token.bondingCurveStatus !== 'valid' 
-                    ? 'Not Available' 
-                    : !token.isActive
-                    ? 'Trading Paused'
-                    : trading 
-                      ? 'Selling...' 
-                      : 'Sell'}
-                </button>
+                {token.bondingCurveStatus === 'valid' && token.isActive && (
+                  <p className="text-gray-400 text-xs sm:text-sm mt-2">
+                    {(() => {
+                      const buyAmountParsed = parseFloat(buyAmount);
+                      if (!buyAmountParsed || buyAmountParsed <= 0) return 'Enter amount';
+                      
+                      const solAfterFee = buyAmountParsed * 0.99; // 1% fee
+                      
+                      // Use CURRENT virtual reserves from token state
+                      const currentVirtualSol = token.virtualSolReserves / 1e9;
+                      const currentVirtualTokens = token.virtualTokenReserves / 1e6;
+                      
+                      // Constant product AMM formula: x * y = k
+                      const k = currentVirtualSol * currentVirtualTokens;
+                      const newVirtualSol = currentVirtualSol + solAfterFee;
+                      const newVirtualTokens = k / newVirtualSol;
+                      const tokensReceived = currentVirtualTokens - newVirtualTokens;
+                      
+                      return `~${(tokensReceived / 1_000_000).toFixed(2)}M tokens`;
+                    })()}
+                  </p>
+                )}
               </div>
-              {userTokenBalance !== null && token.bondingCurveStatus === 'valid' && (
-                <p className="text-gray-400 text-xs sm:text-sm mt-2">
-                  Balance: {userTokenBalance.toLocaleString()} {token.symbol}
-                </p>
-              )}
-            </div>
+
+              <div>
+                <label className="block text-white font-semibold mb-2 text-sm sm:text-base">
+                  Sell Tokens
+                </label>
+                <div className="flex gap-2 sm:gap-3">
+                  <div className="flex-1 relative">
+                    <input
+                      type="number"
+                      step="1"
+                      min="1"
+                      value={sellAmount}
+                      onChange={(e) => setSellAmount(e.target.value)}
+                      className="w-full bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white outline-none text-sm sm:text-base pr-16"
+                      placeholder="Amount"
+                      disabled={token.bondingCurveStatus !== 'valid' || !token.isActive}
+                    />
+                    {userTokenBalance !== null && userTokenBalance > 0 && (
+                      <button
+                        onClick={() => {
+                          // Leave 0.000001 tokens to avoid rent issues
+                          const maxSellable = Math.max(0, userTokenBalance - 0.000001);
+                          setSellAmount(maxSellable.toString());
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-3 py-1 rounded text-xs transition"
+                      >
+                        MAX
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleSell}
+                    disabled={
+                      trading || 
+                      !connected || 
+                      token.bondingCurveStatus !== 'valid' ||
+                      !token.isActive ||
+                      parseFloat(sellAmount) <= 0 || 
+                      parseFloat(sellAmount) > (userTokenBalance || 0)
+                    }
+                    className={`font-bold px-4 sm:px-8 py-2 sm:py-3 rounded-lg transition text-sm sm:text-base whitespace-nowrap ${
+                      token.bondingCurveStatus === 'valid' && token.isActive
+                        ? 'bg-red-500 hover:bg-red-600'
+                        : 'bg-gray-600 cursor-not-allowed'
+                    } text-white`}
+                  >
+                    {token.bondingCurveStatus !== 'valid' 
+                      ? 'Not Available' 
+                      : !token.isActive
+                      ? 'Trading Paused'
+                      : trading 
+                        ? 'Selling...' 
+                        : 'Sell'}
+                  </button>
+                </div>
+                {userTokenBalance !== null && token.bondingCurveStatus === 'valid' && (
+                  <p className="text-gray-400 text-xs sm:text-sm mt-2">
+                    Balance: {userTokenBalance.toLocaleString()} {token.symbol}
+                  </p>
+                )}
+              </div>
             </div>
 
-            {/* Transactions */}
+            {/* ✅ CLAIM DEV TOKENS - UPDATED SECTION */}
+            {connected && 
+             publicKey && 
+             token.creator === publicKey.toBase58() && 
+             token.graduated && (
+              bondingCurveExists ? (
+                // Bonding curve still exists - can claim
+                <div className="bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 rounded-xl p-6 border-2 border-yellow-400">
+                  <h3 className="text-2xl font-bold text-white mb-3">🎁 Claim Your Dev Tokens</h3>
+                  <p className="text-gray-300 mb-4">
+                    Your token has graduated! Claim your 30M developer allocation NOW.
+                  </p>
+                  <div className="bg-red-500/20 border border-red-500 rounded-lg p-4 mb-4">
+                    <p className="text-red-400 font-bold text-sm">⚠️ URGENT - CLAIM IMMEDIATELY!</p>
+                    <p className="text-gray-300 text-xs mt-2">
+                      Platform can process graduation funds at any time. Once processed, the bonding curve PDA is permanently closed and dev tokens can NO LONGER be claimed.
+                    </p>
+                    <p className="text-orange-400 text-xs mt-1 font-bold">
+                      Unclaimed tokens will be transferred to platform!
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleClaimDevTokens}
+                    disabled={trading}
+                    className="w-full bg-yellow-400 hover:bg-yellow-500 disabled:bg-gray-600 text-black font-bold py-4 rounded-lg transition text-lg animate-pulse"
+                  >
+                    {trading ? 'Claiming...' : '🎁 CLAIM 30M DEV TOKENS NOW'}
+                  </button>
+                </div>
+              ) : (
+                // Bonding curve closed - too late
+                <div className="bg-red-500/20 border-2 border-red-500 rounded-xl p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center">
+                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd"/>
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold text-red-400 mb-2">❌ Dev Tokens No Longer Claimable</h3>
+                      <p className="text-gray-300 mb-3 text-sm">
+                        The bonding curve PDA has been permanently closed. Graduation funds have been processed and the Raydium pool has been created.
+                      </p>
+                      <div className="bg-black/50 rounded-lg p-3 mb-3">
+                        <p className="text-gray-400 text-xs mb-2">What happened:</p>
+                        <ul className="text-gray-400 text-xs space-y-1 list-disc list-inside">
+                          <li>Token graduated (reached 81 SOL)</li>
+                          <li>Platform processed graduation funds</li>
+                          <li>Bonding curve PDA was closed</li>
+                          <li>Unclaimed dev tokens were transferred to platform</li>
+                        </ul>
+                      </div>
+                      <p className="text-gray-500 text-xs">
+                        If you believe this was an error, please contact platform support with your token address.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )
+            )}
+
+         {/* Transactions */}
             <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
               <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">Recent Transactions</h2>
               {trades.length === 0 ? (
@@ -1139,26 +1240,6 @@ export default function TokenPage() {
                 </div>
               </div>
             </div>
-
-            {/* Claim Dev Tokens */}
-            {connected && 
-             publicKey && 
-             token.creator === publicKey.toBase58() && 
-             token.graduated && (
-              <div className="bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 rounded-xl p-6 border-2 border-yellow-400">
-                <h3 className="text-2xl font-bold text-white mb-3">🎁 Claim Your Dev Tokens</h3>
-                <p className="text-gray-300 mb-4">
-                  Your token has graduated! Claim your 30M developer allocation.
-                </p>
-                <button
-                  onClick={handleClaimDevTokens}
-                  disabled={trading}
-                  className="w-full bg-yellow-400 hover:bg-yellow-500 disabled:bg-gray-600 text-black font-bold py-4 rounded-lg transition text-lg"
-                >
-                  {trading ? 'Claiming...' : '🎁 Claim 30M Dev Tokens'}
-                </button>
-              </div>
-            )}
 
             {/* Comments Section */}
             <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
