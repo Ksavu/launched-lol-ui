@@ -1112,17 +1112,18 @@ export default function TokenPage() {
               </div>
             )}
 
-            {/* ✅ CLAIM DEV TOKENS - Updated for graduated tokens */}
+            {/* ✅ CLAIM DEV TOKENS - Fixed Logic */}
             {connected &&
               publicKey &&
               token.creator === publicKey.toBase58() &&
               token.graduated &&
+              token.bondingCurveStatus === 'valid' &&
               token.isActive && (
-                // Bonding curve still active - can claim
+                // Token graduated but not yet processed - can still claim
                 <div className="bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 rounded-xl p-6 border-2 border-yellow-400">
                   <h3 className="text-2xl font-bold text-white mb-3">🎁 Claim Your Dev Tokens</h3>
                   <p className="text-gray-300 mb-4">
-                    Your token has graduated! Claim your 30M developer allocation NOW.
+                    Your token has graduated! Claim your 30M developer allocation NOW before platform processes the pool.
                   </p>
                   <div className="bg-red-500/20 border border-red-500 rounded-lg p-4 mb-4">
                     <p className="text-red-400 font-bold text-sm">⚠️ URGENT - CLAIM IMMEDIATELY!</p>
