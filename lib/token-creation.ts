@@ -19,6 +19,7 @@ export async function createTokenManual(
     category: 'meme' | 'ai' | 'gaming' | 'defi' | 'nft' | 'other';
     launchDelay: number;
     antiBotEnabled: boolean;
+    mintKeypair?: Keypair;
   }
 ) {
   // Convert enums to numbers
@@ -95,7 +96,7 @@ export async function createTokenManual(
   console.log('📝 Instruction data:', data.toString('hex'));
 
   // Generate mint keypair
-  const mintKeypair = Keypair.generate();
+  const mintKeypair = params.mintKeypair ?? Keypair.generate();
   console.log('🔑 Mint:', mintKeypair.publicKey.toBase58());
 
   // Derive PDAs

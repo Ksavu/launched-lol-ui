@@ -5,7 +5,8 @@ import { initializeBondingCurve } from '../../lib/bonding-curve-client';
 import { useState } from 'react';
 import { Header } from '../../components/Header';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { PublicKey } from '@solana/web3.js';
+import { PublicKey, Keypair } from '@solana/web3.js';
+import { generateVanityAddress } from '../../lib/vanity-address';
 import   Image from 'next/image';
 import { SuccessModal } from '../../components/SuccessModal';
 
@@ -58,6 +59,9 @@ export default function CreateToken() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
   const [isCreating, setIsCreating] = useState(false);
+  const [vanityChoice, setVanityChoice] = useState<'vanity' | 'random'>('vanity');
+  const [grindAttempts, setGrindAttempts] = useState(0);
+  const [grinding, setGrinding] = useState(false);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -146,6 +150,16 @@ const handleSubmit = async (e: React.FormEvent) => {
       const { metadataUrl } = await metadataResponse.json();
       console.log('✅ Metadata uploaded:', metadataUrl);
       
+      // Step 2.5: Mint address (free = forced ...lol, premium = choice)
+      let mintKeypair: Keypair | undefined;
+      if (formData.tier === 'free' || vanityChoice === 'vanity') {
+        setGrinding(true);
+        const vanity = await generateVanityAddress('lol', 5_000_000, setGrindAttempts);
+        setGrinding(false);
+        if (!vanity) throw new Error('Could not generate a ...lol address, please try again');
+        mintKeypair = vanity.keypair;
+      }
+
       // Step 3: Create token on blockchain
       console.log('⛓️ Creating token on Solana...');
       
@@ -168,6 +182,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           category: formData.category.toLowerCase() as 'meme' | 'ai' | 'gaming' | 'defi' | 'nft' | 'other',
           launchDelay: formData.launchDelay,
           antiBotEnabled: formData.antiBotEnabled,
+          mintKeypair,
         }
       );
       
@@ -559,12 +574,13 @@ resetForm();
               >
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="text-xl font-bold text-white">Free</h3>
-                  <span className="text-2xl font-bold text-yellow-400">0.01 SOL</span>
+                  <span className="text-2xl font-bold text-yellow-400">0.02 SOL</span>
                 </div>
                 <p className="text-sm text-gray-400">~$2</p>
                 <ul className="mt-4 space-y-2 text-sm text-gray-400">
                   <li>✓ Basic listing</li>
                   <li>✓ Bonding curve</li>
+                  <li>✓ Address ends in ...lol</li>
                   <li>✗ Featured placement</li>
                   <li>✗ Anti-bot protection</li>
                 </ul>
@@ -589,10 +605,25 @@ resetForm();
                   <li>✓ Category badge</li>
                   <li>✓ Premium badge</li>
                   <li>✓ Optional anti-bot</li>
+                  <li>✓ Choose ...lol or random address</li>
                 </ul>
               </div>
             </div>
           </div>
+
+          {formData.tier === 'premium' && (
+            <div className="mb-6 bg-black/50 p-4 rounded-xl border border-yellow-400/30 flex gap-3">
+              {(['vanity', 'random'] as const).map((c) => (
+                <button type="button" key={c} onClick={() => setVanityChoice(c)}
+                  className={`flex-1 p-3 rounded-lg border-2 text-sm font-semibold ${vanityChoice === c ? 'border-yellow-400 text-yellow-400' : 'border-gray-700 text-gray-400'}`}>
+                  {c === 'vanity' ? 'Address ending ...lol' : 'Random address'}
+                </button>
+              ))}
+            </div>
+          )}
+          {grinding && (
+            <p className="mb-4 text-yellow-400 text-sm">🔎 Generating ...lol address… {grindAttempts.toLocaleString()} tries</p>
+          )}
 
           {/* Anti-Bot Toggle (Premium Only) */}
           {formData.tier === 'premium' && (
@@ -680,7 +711,7 @@ resetForm();
                   );
                 })()}
                 <p className="text-xs text-gray-400 mt-1">
-                  Total cost: {(parseFloat(formData.tier === 'free' ? '0.01' : '0.5') + formData.devBuyAmount).toFixed(2)} SOL
+                  Total cost: {(parseFloat(formData.tier === 'free' ? '0.02' : '0.5') + formData.devBuyAmount).toFixed(2)} SOL
                 </p>
               </div>
             )}
@@ -698,7 +729,7 @@ resetForm();
           >
             {isCreating 
               ? 'Creating...' 
-              : `Create Token (${(parseFloat(formData.tier === 'free' ? '0.01' : '0.5') + formData.devBuyAmount).toFixed(2)} SOL)`
+              : `Create Token (${(parseFloat(formData.tier === 'free' ? '0.02' : '0.5') + formData.devBuyAmount).toFixed(2)} SOL)`
             }
           </button>
 
