@@ -10,26 +10,31 @@ export interface VanityResult {
   attempts: number;
 }
 
-/** Grind a keypair whose base58 address ends with `suffix`, using all CPU cores via web workers. */
-export async function generateVanityAddress(
+export interface VanityHandle {
+  promise: Promise<VanityResult | null>;
+  cancel: () => void;
+}
+
+/** Start grinding on all CPU cores (web workers). Call cancel() to stop. */
+export function startVanityGrind(
   suffix: string = VANITY_SUFFIX,
-  maxAttempts = 20_000_000,
-  onProgress?: (attempts: number) => void
-): Promise<VanityResult | null> {
+  onProgress?: (attempts: number) => void,
+  maxAttempts = 100_000_000
+): VanityHandle {
   const cores = Math.min(typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || 4 : 4, 8);
+  const workers: Worker[] = [];
+  let finishFn: (r: VanityResult | null) => void = () => {};
+  let done = false;
+  let total = 0;
 
-  return new Promise((resolve) => {
-    let total = 0;
-    let done = false;
-    const workers: Worker[] = [];
-
+  const promise = new Promise<VanityResult | null>((resolve) => {
     const finish = (result: VanityResult | null) => {
       if (done) return;
       done = true;
       workers.forEach((w) => w.terminate());
       resolve(result);
     };
-
+    finishFn = finish;
     try {
       for (let i = 0; i < cores; i++) {
         const w = new Worker(new URL('./vanity-worker.ts', import.meta.url));
@@ -43,12 +48,18 @@ export async function generateVanityAddress(
             finish({ keypair, address: keypair.publicKey.toBase58(), attempts: total });
           }
         };
-        w.onerror = () => finish(null);
+        w.onerror = (err) => {
+          console.error('vanity worker error', err);
+          finish(null);
+        };
         w.postMessage({ suffix });
         workers.push(w);
       }
-    } catch {
+    } catch (err) {
+      console.error('could not start vanity workers', err);
       finish(null);
     }
   });
+
+  return { promise, cancel: () => finishFn(null) };
 }

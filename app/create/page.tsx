@@ -2,11 +2,11 @@
 
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { initializeBondingCurve } from '../../lib/bonding-curve-client';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Header } from '../../components/Header';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey, Keypair } from '@solana/web3.js';
-import { generateVanityAddress, VANITY_SUFFIX } from '../../lib/vanity-address';
+import { startVanityGrind, VANITY_SUFFIX, VanityHandle, VanityResult } from '../../lib/vanity-address';
 import   Image from 'next/image';
 import { SuccessModal } from '../../components/SuccessModal';
 
@@ -62,6 +62,26 @@ export default function CreateToken() {
   const [vanityChoice, setVanityChoice] = useState<'vanity' | 'random'>('vanity');
   const [grindAttempts, setGrindAttempts] = useState(0);
   const [grinding, setGrinding] = useState(false);
+  const [vanityReady, setVanityReady] = useState(false);
+  const vanityRef = useRef<VanityHandle | null>(null);
+
+  const needsVanity = formData.tier === 'free' || vanityChoice === 'vanity';
+
+  // Start grinding in the background as soon as the page needs a ...LoL address
+  useEffect(() => {
+    if (needsVanity && !vanityRef.current) {
+      setGrindAttempts(0);
+      const h = startVanityGrind(VANITY_SUFFIX, setGrindAttempts);
+      vanityRef.current = h;
+      h.promise.then((r) => { if (r && vanityRef.current === h) setVanityReady(true); });
+    }
+    if (!needsVanity && vanityRef.current) {
+      vanityRef.current.cancel();
+      vanityRef.current = null;
+      setVanityReady(false);
+    }
+  }, [needsVanity]);
+  useEffect(() => () => { vanityRef.current?.cancel(); }, []);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -154,7 +174,10 @@ const handleSubmit = async (e: React.FormEvent) => {
       let mintKeypair: Keypair | undefined;
       if (formData.tier === 'free' || vanityChoice === 'vanity') {
         setGrinding(true);
-        const vanity = await generateVanityAddress(VANITY_SUFFIX, 20_000_000, setGrindAttempts);
+        if (!vanityRef.current) vanityRef.current = startVanityGrind(VANITY_SUFFIX, setGrindAttempts);
+        const vanity: VanityResult | null = await vanityRef.current.promise;
+        vanityRef.current = null; // next token grinds a fresh address
+        setVanityReady(false);
         setGrinding(false);
         if (!vanity) throw new Error('Could not generate a ...LoL address, please try again');
         mintKeypair = vanity.keypair;
@@ -621,8 +644,12 @@ resetForm();
               ))}
             </div>
           )}
-          {grinding && (
-            <p className="mb-4 text-yellow-400 text-sm">🔎 Generating ...LoL address… {grindAttempts.toLocaleString()} tries</p>
+          {needsVanity && (
+            <p className="mb-4 text-yellow-400 text-sm">
+              {vanityReady
+                ? '✅ ...LoL address ready'
+                : `🔎 Generating ...LoL address in background… ${grindAttempts.toLocaleString()} tries${grinding ? ' (finishing, please wait)' : ''}`}
+            </p>
           )}
 
           {/* Anti-Bot Toggle (Premium Only) */}

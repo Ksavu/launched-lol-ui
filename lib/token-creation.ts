@@ -154,7 +154,7 @@ export async function createTokenManual(
   const transaction = new Transaction().add(instruction);
   transaction.feePayer = wallet.publicKey;
   
-  const { blockhash } = await connection.getLatestBlockhash();
+  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
   transaction.recentBlockhash = blockhash;
 
   // Sign with mint keypair
@@ -167,11 +167,28 @@ export async function createTokenManual(
   
   console.log('📡 Sending transaction...');
   
-  const txid = await connection.sendRawTransaction(signed.serialize());
-  
+  // Devnet RPC nodes lag each other, so retry if the node hasn't seen the blockhash yet
+  let txid = '';
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      txid = await connection.sendRawTransaction(signed.serialize(), {
+        preflightCommitment: 'confirmed',
+        maxRetries: 5,
+      });
+      break;
+    } catch (err: any) {
+      const msg = String(err?.message || err);
+      if (attempt < 4 && /blockhash not found/i.test(msg)) {
+        await new Promise((r) => setTimeout(r, 1500));
+        continue;
+      }
+      throw err;
+    }
+  }
+
   console.log('⏳ Confirming transaction...');
-  
-  await connection.confirmTransaction(txid, 'confirmed');
+
+  await connection.confirmTransaction({ signature: txid, blockhash, lastValidBlockHeight }, 'confirmed');
 
   console.log('✅ Transaction confirmed!');
   console.log('🪙 Real SPL tokens minted!');
