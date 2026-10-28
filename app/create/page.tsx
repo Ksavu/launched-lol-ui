@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Header } from '../../components/Header';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey, Keypair } from '@solana/web3.js';
-import { generateVanityAddress } from '../../lib/vanity-address';
+import { generateVanityAddress, VANITY_SUFFIX } from '../../lib/vanity-address';
 import   Image from 'next/image';
 import { SuccessModal } from '../../components/SuccessModal';
 
@@ -150,13 +150,13 @@ const handleSubmit = async (e: React.FormEvent) => {
       const { metadataUrl } = await metadataResponse.json();
       console.log('✅ Metadata uploaded:', metadataUrl);
       
-      // Step 2.5: Mint address (free = forced ...lol, premium = choice)
+      // Step 2.5: Mint address (free = forced ...LoL, premium = choice)
       let mintKeypair: Keypair | undefined;
       if (formData.tier === 'free' || vanityChoice === 'vanity') {
         setGrinding(true);
-        const vanity = await generateVanityAddress('lol', 5_000_000, setGrindAttempts);
+        const vanity = await generateVanityAddress(VANITY_SUFFIX, 20_000_000, setGrindAttempts);
         setGrinding(false);
-        if (!vanity) throw new Error('Could not generate a ...lol address, please try again');
+        if (!vanity) throw new Error('Could not generate a ...LoL address, please try again');
         mintKeypair = vanity.keypair;
       }
 
@@ -580,7 +580,7 @@ resetForm();
                 <ul className="mt-4 space-y-2 text-sm text-gray-400">
                   <li>✓ Basic listing</li>
                   <li>✓ Bonding curve</li>
-                  <li>✓ Address ends in ...lol</li>
+                  <li>✓ Address ends in ...LoL</li>
                   <li>✗ Featured placement</li>
                   <li>✗ Anti-bot protection</li>
                 </ul>
@@ -605,7 +605,7 @@ resetForm();
                   <li>✓ Category badge</li>
                   <li>✓ Premium badge</li>
                   <li>✓ Optional anti-bot</li>
-                  <li>✓ Choose ...lol or random address</li>
+                  <li>✓ Choose ...LoL or random address</li>
                 </ul>
               </div>
             </div>
@@ -616,13 +616,13 @@ resetForm();
               {(['vanity', 'random'] as const).map((c) => (
                 <button type="button" key={c} onClick={() => setVanityChoice(c)}
                   className={`flex-1 p-3 rounded-lg border-2 text-sm font-semibold ${vanityChoice === c ? 'border-yellow-400 text-yellow-400' : 'border-gray-700 text-gray-400'}`}>
-                  {c === 'vanity' ? 'Address ending ...lol' : 'Random address'}
+                  {c === 'vanity' ? 'Address ending ...LoL' : 'Random address'}
                 </button>
               ))}
             </div>
           )}
           {grinding && (
-            <p className="mb-4 text-yellow-400 text-sm">🔎 Generating ...lol address… {grindAttempts.toLocaleString()} tries</p>
+            <p className="mb-4 text-yellow-400 text-sm">🔎 Generating ...LoL address… {grindAttempts.toLocaleString()} tries</p>
           )}
 
           {/* Anti-Bot Toggle (Premium Only) */}
