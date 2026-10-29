@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { Connection, PublicKey } from '@solana/web3.js';
+import { RPC_URL } from '../../../../lib/rpc';
 
-const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
+const connection = new Connection(RPC_URL, 'confirmed');
 const BONDING_CURVE_PROGRAM_ID = new PublicKey('21ACVywCBCgrgAx8HpLJM6mJC8pxMzvvi58in5Xv7qej');
 
 interface Trade {

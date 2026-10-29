@@ -27,33 +27,33 @@ export function TradingViewChart({ data }: TradingViewChartProps) {
     // Create chart
     const chart = createChart(chartContainerRef.current, {
       layout: {
-        background: { color: '#000000' },
-        textColor: '#9ca3af',
+        background: { color: '#ffffff' },
+        textColor: '#62596f',
       },
       grid: {
-        vertLines: { color: '#1f2937' },
-        horzLines: { color: '#1f2937' },
+        vertLines: { color: '#f0e8fa' },
+        horzLines: { color: '#f0e8fa' },
       },
       width: chartContainerRef.current.clientWidth,
       height: 400,
       timeScale: {
         timeVisible: true,
         secondsVisible: false,
-        borderColor: '#374151',
+        borderColor: '#d0bce5',
       },
       rightPriceScale: {
-        borderColor: '#374151',
+        borderColor: '#d0bce5',
       },
       crosshair: {
         mode: 1,
         vertLine: {
           width: 1,
-          color: '#6b7280',
+          color: '#9945ff',
           style: 3,
         },
         horzLine: {
           width: 1,
-          color: '#6b7280',
+          color: '#9945ff',
           style: 3,
         },
       },
@@ -63,10 +63,10 @@ export function TradingViewChart({ data }: TradingViewChartProps) {
 
     // Create candlestick series
     const candlestickSeries = chart.addCandlestickSeries({
-      upColor: '#10b981',
+      upColor: '#14c783',
       downColor: '#ef4444',
       borderVisible: false,
-      wickUpColor: '#10b981',
+      wickUpColor: '#14c783',
       wickDownColor: '#ef4444',
     });
 
@@ -103,19 +103,17 @@ export function TradingViewChart({ data }: TradingViewChartProps) {
     }
   }, [data]);
 
-  // Show message if no data
-  if (data.length === 0) {
-    return (
-      <div className="w-full h-[400px] flex items-center justify-center bg-black border border-gray-800 rounded-lg">
-        <div className="text-center">
-          <p className="text-gray-400 text-lg mb-2">📈 No trading data yet</p>
-          <p className="text-gray-500 text-sm">Chart will appear after first trade</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div ref={chartContainerRef} className="w-full rounded-lg overflow-hidden border border-gray-800" />
+    <div className="relative w-full">
+      <div ref={chartContainerRef} className="w-full rounded-lg overflow-hidden border border-line" style={{ minHeight: 400 }} />
+      {data.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white border border-line rounded-lg">
+          <div className="text-center">
+            <p className="text-muted text-lg mb-2">📈 No trading data yet</p>
+            <p className="text-[#8a8291] text-sm">Chart will appear after first trade</p>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

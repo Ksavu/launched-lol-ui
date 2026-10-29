@@ -122,7 +122,7 @@ export default function Explore() {
   });
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-page">
       <Header />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -130,22 +130,22 @@ export default function Explore() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              <h1 className="text-4xl md:text-5xl font-bold text-ink mb-4">
                 Explore Tokens
               </h1>
-              <p className="text-gray-400">
+              <p className="text-muted">
                 Discover trending tokens on the bonding curve
               </p>
             </div>
             <div className="text-right">
-              <p className="text-gray-400 text-sm">SOL Price</p>
-              <p className="text-white text-2xl font-bold">${solPrice.toFixed(2)}</p>
+              <p className="text-muted text-sm">SOL Price</p>
+              <p className="text-ink text-2xl font-bold">${solPrice.toFixed(2)}</p>
             </div>
           </div>
         </div>
 
         {/* Search & Sort */}
-        <div className="bg-gray-900 rounded-xl p-6 mb-6 border-2 border-gray-800">
+        <div className="bg-white rounded-xl p-6 mb-6 border-2 border-line">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div className="md:col-span-2">
               <input
@@ -153,14 +153,14 @@ export default function Explore() {
                 placeholder="🔍 Search by name, symbol, or address..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-4 py-3 text-white outline-none"
+                className="w-full bg-white border-2 border-line focus:border-brand rounded-lg px-4 py-3 text-ink outline-none"
               />
             </div>
 
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-4 py-3 text-white outline-none"
+              className="bg-white border-2 border-line focus:border-brand rounded-lg px-4 py-3 text-ink outline-none"
             >
               <option value="mcap">💰 Market Cap</option>
               <option value="volume">📊 Volume</option>
@@ -175,7 +175,7 @@ export default function Explore() {
               onChange={(e) => setShowPremiumOnly(e.target.checked)}
               className="w-5 h-5 accent-yellow-400"
             />
-            <span className="text-white font-semibold flex items-center gap-2">
+            <span className="text-ink font-semibold flex items-center gap-2">
               <span>⭐</span>
               <span>Premium Only</span>
             </span>
@@ -189,8 +189,8 @@ export default function Explore() {
               onClick={() => setFilter('all')}
               className={`px-6 py-2 rounded-lg font-semibold transition ${
                 filter === 'all'
-                  ? 'bg-yellow-400 text-black'
-                  : 'bg-gray-800 text-white hover:bg-gray-700'
+                  ? 'bg-brand text-white'
+                  : 'bg-panel text-ink hover:bg-[#e7dbf6]'
               }`}
             >
               All ({tokens.length})
@@ -199,8 +199,8 @@ export default function Explore() {
               onClick={() => setFilter('active')}
               className={`px-6 py-2 rounded-lg font-semibold transition ${
                 filter === 'active'
-                  ? 'bg-yellow-400 text-black'
-                  : 'bg-gray-800 text-white hover:bg-gray-700'
+                  ? 'bg-brand text-white'
+                  : 'bg-panel text-ink hover:bg-[#e7dbf6]'
               }`}
             >
               Active ({tokens.filter((t) => t.isActive).length})
@@ -209,8 +209,8 @@ export default function Explore() {
               onClick={() => setFilter('graduated')}
               className={`px-6 py-2 rounded-lg font-semibold transition ${
                 filter === 'graduated'
-                  ? 'bg-yellow-400 text-black'
-                  : 'bg-gray-800 text-white hover:bg-gray-700'
+                  ? 'bg-brand text-white'
+                  : 'bg-panel text-ink hover:bg-[#e7dbf6]'
               }`}
             >
               Graduated ({tokens.filter((t) => t.graduated).length})
@@ -227,8 +227,8 @@ export default function Explore() {
                 onClick={() => setCategory(cat.toLowerCase() as any)}
                 className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition ${
                   category === cat.toLowerCase()
-                    ? 'bg-yellow-400/20 text-yellow-400 border-2 border-yellow-400'
-                    : 'bg-gray-800 text-gray-400 border-2 border-transparent hover:border-gray-600'
+                    ? 'bg-brand/15 text-brand border-2 border-brand'
+                    : 'bg-panel text-muted border-2 border-transparent hover:border-[#b79ad8]'
                 }`}
               >
                 {cat === 'All' ? '📦 All' : 
@@ -245,15 +245,15 @@ export default function Explore() {
         {/* Loading */}
         {loading && (
           <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-400"></div>
-            <p className="text-white mt-4">Loading tokens...</p>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand"></div>
+            <p className="text-ink mt-4">Loading tokens...</p>
           </div>
         )}
 
         {/* No Results */}
         {!loading && filteredTokens.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-400 text-lg">
+            <p className="text-muted text-lg">
               {searchQuery ? 'No tokens found matching your search' : 'No tokens found'}
             </p>
           </div>
@@ -268,10 +268,10 @@ export default function Explore() {
               <Link
                 key={token.address}
                 href={`/token/${token.address}`}
-                className="bg-gray-900 rounded-xl overflow-hidden border-2 border-gray-800 hover:border-yellow-400 transition group"
+                className="bg-white rounded-xl overflow-hidden border-2 border-line hover:border-brand transition group"
               >
                 {/* Image */}
-                <div className="aspect-square bg-gray-800 relative overflow-hidden">
+                <div className="aspect-square bg-panel relative overflow-hidden">
                   {token.isPremium && (
                     <div className="absolute top-3 right-3 z-10">
                       <PremiumBadge />
@@ -307,16 +307,16 @@ export default function Explore() {
                 {/* Info */}
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-white font-bold text-lg truncate flex-1">
+                    <h3 className="text-ink font-bold text-lg truncate flex-1">
                       {token.name}
                     </h3>
-                    <span className="text-yellow-400 font-bold ml-2">${token.symbol}</span>
+                    <span className="text-brand font-bold ml-2">${token.symbol}</span>
                   </div>
 
                   {/* Market Cap */}
                   <div className="mb-3">
-                    <p className="text-gray-400 text-xs">Market Cap</p>
-                    <p className="text-white text-xl font-bold">
+                    <p className="text-muted text-xs">Market Cap</p>
+                    <p className="text-ink text-xl font-bold">
                       {formatMarketCap(marketCap)}
                     </p>
                   </div>
@@ -325,20 +325,20 @@ export default function Explore() {
                   {token.graduated ? (
                     <div className="mb-3">
                       <div className="bg-green-500/20 border border-green-500 rounded-lg p-2 text-center">
-                        <p className="text-green-400 font-bold text-sm">🎓 100% - Graduated</p>
+                        <p className="text-emerald-600 font-bold text-sm">🎓 100% - Graduated</p>
                       </div>
                     </div>
                   ) : (
                     <div className="mb-3">
                       <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-400">Progress</span>
-                        <span className="text-yellow-400 font-bold">
+                        <span className="text-muted">Progress</span>
+                        <span className="text-brand font-bold">
                           {Math.min(token.progress, 100).toFixed(1)}%
                         </span>
                       </div>
-                      <div className="w-full bg-gray-800 rounded-full h-2">
+                      <div className="w-full bg-panel rounded-full h-2">
                         <div
-                          className="bg-gradient-to-r from-yellow-400 to-yellow-600 h-2 rounded-full transition-all"
+                          className="bg-gradient-to-r from-[#7330c8] to-brand h-2 rounded-full transition-all"
                           style={{ width: `${Math.min(token.progress, 100)}%` }}
                         />
                       </div>
@@ -348,16 +348,16 @@ export default function Explore() {
                   {/* Stats */}
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
-                      <p className="text-gray-400">
+                      <p className="text-muted">
                         {token.graduated ? 'Final Raise' : 'SOL Raised'}
                       </p>
-                      <p className="text-white font-bold">
+                      <p className="text-ink font-bold">
                         {token.graduated ? '81.00 SOL' : `${token.solCollected.toFixed(2)} SOL`}
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-400">Holders</p>
-                      <p className="text-white font-bold">--</p>
+                      <p className="text-muted">Holders</p>
+                      <p className="text-ink font-bold">--</p>
                     </div>
                   </div>
                 </div>

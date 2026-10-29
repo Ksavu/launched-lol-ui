@@ -641,10 +641,10 @@ export default function TokenPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-black">
+      <div className="min-h-screen bg-page">
         <Header />
         <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-white text-xl">Loading token...</div>
+          <div className="text-ink text-xl">Loading token...</div>
         </div>
       </div>
     );
@@ -653,17 +653,17 @@ export default function TokenPage() {
   // Not found state
   if (!token) {
     return (
-      <div className="min-h-screen bg-black">
+      <div className="min-h-screen bg-page">
         <Header />
         <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-white text-xl">Token not found</div>
+          <div className="text-ink text-xl">Token not found</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-page">
       <Header />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -671,7 +671,7 @@ export default function TokenPage() {
 
           {/* Left Column */}
           <div className="lg:col-span-1 space-y-6">
-            <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-gray-900">
+            <div className="relative w-full aspect-square rounded-xl overflow-hidden bg-white">
               {token.imageUrl ? (
                 <Image src={token.imageUrl} alt={token.name} fill className="object-cover" />
               ) : (
@@ -687,12 +687,12 @@ export default function TokenPage() {
                     href={token.twitter}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 bg-black/50 hover:bg-black border border-gray-700 hover:border-yellow-400 rounded-lg px-3 py-2 transition"
+                    className="flex items-center gap-2 bg-white/70 hover:bg-white border border-line hover:border-brand rounded-lg px-3 py-2 transition"
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                     </svg>
-                    <span className="text-white text-sm">X</span>
+                    <span className="text-ink text-sm">X</span>
                   </a>
                 )}
 
@@ -701,12 +701,12 @@ export default function TokenPage() {
                     href={token.telegram}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 bg-black/50 hover:bg-black border border-gray-700 hover:border-yellow-400 rounded-lg px-3 py-2 transition"
+                    className="flex items-center gap-2 bg-white/70 hover:bg-white border border-line hover:border-brand rounded-lg px-3 py-2 transition"
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.461-1.901-.903-1.056-.692-1.653-1.123-2.678-1.799-1.185-.781-.417-1.21.258-1.911.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.242-1.865-.442-.752-.244-1.349-.374-1.297-.789.027-.216.324-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635.099-.002.321.023.465.141.121.099.154.232.17.326.016.094.036.308.02.475z" />
                     </svg>
-                    <span className="text-white text-sm">Telegram</span>
+                    <span className="text-ink text-sm">Telegram</span>
                   </a>
                 )}
 
@@ -715,14 +715,14 @@ export default function TokenPage() {
                     href={token.website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 bg-black/50 hover:bg-black border border-gray-700 hover:border-yellow-400 rounded-lg px-3 py-2 transition"
+                    className="flex items-center gap-2 bg-white/70 hover:bg-white border border-line hover:border-brand rounded-lg px-3 py-2 transition"
                   >
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <circle cx="12" cy="12" r="10" />
                       <line x1="2" y1="12" x2="22" y2="12" />
                       <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                     </svg>
-                    <span className="text-white text-sm">Website</span>
+                    <span className="text-ink text-sm">Website</span>
                   </a>
                 )}
               </div>
@@ -737,31 +737,31 @@ export default function TokenPage() {
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0">
                       <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
-                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-6 h-6 text-ink" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>
                       </div>
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold text-white mb-2">🔐 Get Verified</h3>
-                      <p className="text-gray-300 text-sm mb-4">
+                      <h3 className="text-xl font-bold text-ink mb-2">🔐 Get Verified</h3>
+                      <p className="text-[#4c4459] text-sm mb-4">
                         Prove your social accounts are authentic. Verified accounts get a blue checkmark badge,
                         helping users identify the official project.
                       </p>
 
                       {verificationStatus?.verified ? (
                         <div className="bg-green-500/20 border border-green-400 rounded-lg p-4">
-                          <p className="text-green-400 font-bold">✅ Verified Accounts:</p>
-                          <ul className="text-green-300 text-sm mt-2">
+                          <p className="text-emerald-600 font-bold">✅ Verified Accounts:</p>
+                          <ul className="text-emerald-600 text-sm mt-2">
                             {verificationStatus.platforms.map(platform => (
                               <li key={platform}>• {platform}</li>
                             ))}
                           </ul>
                         </div>
                       ) : verificationStatus?.pending ? (
-                        <div className="bg-yellow-500/20 border border-yellow-400 rounded-lg p-4">
-                          <p className="text-yellow-400 font-bold">⏳ Verification Pending</p>
-                          <p className="text-yellow-300 text-sm mt-1">
+                        <div className="bg-brand/15 border border-brand rounded-lg p-4">
+                          <p className="text-brand font-bold">⏳ Verification Pending</p>
+                          <p className="text-brand text-sm mt-1">
                             Our team will review your request.
                           </p>
                         </div>
@@ -769,7 +769,7 @@ export default function TokenPage() {
                         <button
                           onClick={handleRequestVerification}
                           disabled={trading}
-                          className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 text-white font-bold px-6 py-3 rounded-lg transition"
+                          className="bg-blue-500 hover:bg-blue-600 disabled:bg-[#d9c9ed] text-white font-bold px-6 py-3 rounded-lg transition"
                         >
                           {trading ? 'Submitting...' : 'Request Verification'}
                         </button>
@@ -780,64 +780,64 @@ export default function TokenPage() {
               )}
 
             {/* Token Info */}
-            <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
+            <div className="bg-white rounded-xl p-4 sm:p-6 border-2 border-line">
               <div className="flex items-center gap-2 mb-2">
-                <h1 className="text-2xl sm:text-3xl font-bold text-white">{token.name}</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-ink">{token.name}</h1>
                 {token.verified && (
-                  <svg className="w-6 h-6 text-blue-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-6 h-6 text-indigo-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                 )}
               </div>
-              <p className="text-gray-400 text-base sm:text-lg mb-4">${token.symbol}</p>
+              <p className="text-muted text-base sm:text-lg mb-4">${token.symbol}</p>
 
               {/* Bonding Curve Status Indicator */}
               {token.graduated && (
                 <div className="mt-2 mb-4">
                   {bondingCurveExists ? (
-                    <div className="inline-flex items-center gap-2 bg-yellow-500/20 border border-yellow-500 rounded-full px-3 py-1">
-                      <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
-                      <span className="text-yellow-400 text-xs font-bold">Dev Claim Available</span>
+                    <div className="inline-flex items-center gap-2 bg-brand/15 border border-brand rounded-full px-3 py-1">
+                      <div className="w-2 h-2 bg-brand rounded-full animate-pulse"></div>
+                      <span className="text-brand text-xs font-bold">Dev Claim Available</span>
                     </div>
                   ) : (
-                    <div className="inline-flex items-center gap-2 bg-gray-700/20 border border-gray-600 rounded-full px-3 py-1">
-                      <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                      <span className="text-gray-500 text-xs font-bold">Bonding Curve Closed</span>
+                    <div className="inline-flex items-center gap-2 bg-panel border border-[#b79ad8] rounded-full px-3 py-1">
+                      <div className="w-2 h-2 bg-[#c4addf] rounded-full"></div>
+                      <span className="text-[#8a8291] text-xs font-bold">Bonding Curve Closed</span>
                     </div>
                   )}
                 </div>
               )}
 
-              {token.description && <p className="text-gray-300 mb-6 text-sm sm:text-base">{token.description}</p>}
+              {token.description && <p className="text-[#4c4459] mb-6 text-sm sm:text-base">{token.description}</p>}
 
               <div className="space-y-3 sm:space-y-4">
                 <div className="flex justify-between text-sm sm:text-base">
-                  <span className="text-gray-400">Market Cap</span>
-                  <span className="text-white font-semibold">
+                  <span className="text-muted">Market Cap</span>
+                  <span className="text-ink font-semibold">
                     {formatMarketCap(marketCap)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm sm:text-base">
-                  <span className="text-gray-400">SOL Price</span>
-                  <span className="text-white font-semibold">${solPrice.toFixed(2)}</span>
+                  <span className="text-muted">SOL Price</span>
+                  <span className="text-ink font-semibold">${solPrice.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm sm:text-base">
-                  <span className="text-gray-400">
+                  <span className="text-muted">
                     {token.graduated ? 'Final Raise' : 'SOL Collected'}
                   </span>
-                  <span className="text-white font-semibold">
+                  <span className="text-ink font-semibold">
                     {token.graduated ? '81.00 SOL' : `${token.solCollected.toFixed(3)} SOL`}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm sm:text-base">
-                  <span className="text-gray-400">Tokens Sold</span>
-                  <span className="text-white font-semibold">{token.tokensSold.toFixed(2)}</span>
+                  <span className="text-muted">Tokens Sold</span>
+                  <span className="text-ink font-semibold">{token.tokensSold.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm sm:text-base">
-                  <span className="text-gray-400">Status</span>
-                  <span className={`font-semibold ${token.bondingCurveStatus === 'not_found' ? 'text-gray-400' :
-                      token.bondingCurveStatus === 'corrupted' ? 'text-red-400' :
-                        token.isActive ? 'text-green-400' : 'text-yellow-400'
+                  <span className="text-muted">Status</span>
+                  <span className={`font-semibold ${token.bondingCurveStatus === 'not_found' ? 'text-muted' :
+                      token.bondingCurveStatus === 'corrupted' ? 'text-rose-500' :
+                        token.isActive ? 'text-emerald-600' : 'text-brand'
                     }`}>
                     {token.bondingCurveStatus === 'not_found' && '⏳ Not Initialized'}
                     {token.bondingCurveStatus === 'corrupted' && '⚠️ Corrupted'}
@@ -858,13 +858,13 @@ export default function TokenPage() {
                             🎓 GRADUATED
                           </span>
                         </div>
-                        <p className="text-gray-400 text-sm mb-2">Final Raise</p>
-                        <p className="text-white text-3xl font-bold mb-4">81.00 SOL</p>
-                        <div className="w-full bg-gray-800 rounded-full h-3 mb-2">
+                        <p className="text-muted text-sm mb-2">Final Raise</p>
+                        <p className="text-ink text-3xl font-bold mb-4">81.00 SOL</p>
+                        <div className="w-full bg-panel rounded-full h-3 mb-2">
                           <div className="bg-gradient-to-r from-green-400 to-green-600 h-3 rounded-full w-full" />
                         </div>
-                        <p className="text-green-400 font-bold">100% Complete</p>
-                        <p className="text-gray-500 text-sm mt-2">
+                        <p className="text-emerald-600 font-bold">100% Complete</p>
+                        <p className="text-[#8a8291] text-sm mt-2">
                           Token graduated to Raydium!
                         </p>
                       </div>
@@ -872,27 +872,27 @@ export default function TokenPage() {
                       // Active trading - Show progress
                       <div>
                         <div className="flex justify-between text-xs sm:text-sm mb-2">
-                          <span className="text-gray-400">Progress to 81 SOL</span>
-                          <span className="text-white font-semibold">
+                          <span className="text-muted">Progress to 81 SOL</span>
+                          <span className="text-ink font-semibold">
                             {Math.min(token.progress, 100).toFixed(2)}%
                           </span>
                         </div>
-                        <div className="w-full bg-gray-800 rounded-full h-3 mb-4">
+                        <div className="w-full bg-panel rounded-full h-3 mb-4">
                           <div
-                            className="bg-gradient-to-r from-yellow-400 to-yellow-600 h-3 rounded-full transition-all"
+                            className="bg-gradient-to-r from-[#7330c8] to-brand h-3 rounded-full transition-all"
                             style={{ width: `${Math.min(token.progress, 100)}%` }}
                           />
                         </div>
                         <div className="flex justify-between text-sm">
                           <div>
-                            <p className="text-gray-400">Raised</p>
-                            <p className="text-white font-bold text-lg">
+                            <p className="text-muted">Raised</p>
+                            <p className="text-ink font-bold text-lg">
                               {token.solCollected.toFixed(2)} SOL
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="text-gray-400">Goal</p>
-                            <p className="text-white font-bold text-lg">81.00 SOL</p>
+                            <p className="text-muted">Goal</p>
+                            <p className="text-ink font-bold text-lg">81.00 SOL</p>
                           </div>
                         </div>
                       </div>
@@ -903,23 +903,23 @@ export default function TokenPage() {
             </div>
 
             {/* Statistics */}
-            <div className="bg-gray-900 rounded-xl p-4 border-2 border-gray-800">
-              <h3 className="text-white font-semibold mb-3">Statistics</h3>
+            <div className="bg-white rounded-xl p-4 border-2 border-line">
+              <h3 className="text-ink font-semibold mb-3">Statistics</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-gray-400 text-sm">24h Volume</p>
-                  <p className="text-white font-semibold">{volume24h.toFixed(2)} SOL</p>
+                  <p className="text-muted text-sm">24h Volume</p>
+                  <p className="text-ink font-semibold">{volume24h.toFixed(2)} SOL</p>
                 </div>
                 <div>
-                  <p className="text-gray-400 text-sm">Holders</p>
-                  <p className="text-white font-semibold">{holderCount !== null ? holderCount : '...'}</p>
+                  <p className="text-muted text-sm">Holders</p>
+                  <p className="text-ink font-semibold">{holderCount !== null ? holderCount : '...'}</p>
                 </div>
                 <div>
-                  <p className="text-gray-400 text-sm">Total Trades</p>
-                  <p className="text-white font-semibold">{trades.length}</p>
+                  <p className="text-muted text-sm">Total Trades</p>
+                  <p className="text-ink font-semibold">{trades.length}</p>
                 </div>
                 <div>
-                  <p className="text-gray-400 text-sm">24h Change</p>
+                  <p className="text-muted text-sm">24h Change</p>
                   <p className={`font-semibold ${priceChange24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {last24hTrades.length < 2 ? 'N/A' : `${priceChange24h >= 0 ? '+' : ''}${priceChange24h.toFixed(2)}%`}
                   </p>
@@ -931,9 +931,9 @@ export default function TokenPage() {
           {/* Right Column */}
           <div className="lg:col-span-2 space-y-6 lg:space-y-8">
             {/* Chart */}
-            <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
+            <div className="bg-white rounded-xl p-4 sm:p-6 border-2 border-line">
               <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-                <h2 className="text-xl sm:text-2xl font-bold text-white">Price Chart</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-ink">Price Chart</h2>
                 <div className="flex gap-2">
                   {[
                     { label: '1m', value: 60 },
@@ -945,7 +945,7 @@ export default function TokenPage() {
                     <button
                       key={interval.value}
                       onClick={() => setChartInterval(interval.value as any)}
-                      className={`px-3 py-1 rounded text-sm font-semibold transition ${chartInterval === interval.value ? 'bg-yellow-400 text-black' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                      className={`px-3 py-1 rounded text-sm font-semibold transition ${chartInterval === interval.value ? 'bg-brand text-white' : 'bg-panel text-muted hover:bg-[#e7dbf6]'
                         }`}
                     >
                       {interval.label}
@@ -960,29 +960,29 @@ export default function TokenPage() {
             {token.graduated ? (
               // Graduated - Show Raydium Link
               <div className="bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-xl p-6 border-2 border-green-400">
-                <h2 className="text-2xl font-bold text-white mb-3">🎓 Token Graduated to Raydium!</h2>
-                <p className="text-gray-300 mb-4">
+                <h2 className="text-2xl font-bold text-ink mb-3">🎓 Token Graduated to Raydium!</h2>
+                <p className="text-[#4c4459] mb-4">
                   This token successfully raised 81 SOL and has graduated from the bonding curve.
                   Trading is now available on Raydium DEX with permanent liquidity.
                 </p>
 
-                <div className="bg-black/50 rounded-lg p-4 mb-4">
+                <div className="bg-white/70 rounded-lg p-4 mb-4">
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-gray-400">Total Raised</p>
-                      <p className="text-white font-bold text-lg">81.00 SOL</p>
+                      <p className="text-muted">Total Raised</p>
+                      <p className="text-ink font-bold text-lg">81.00 SOL</p>
                     </div>
                     <div>
-                      <p className="text-gray-400">Liquidity Pool</p>
-                      <p className="text-white font-bold text-lg">75 SOL + 200M Tokens</p>
+                      <p className="text-muted">Liquidity Pool</p>
+                      <p className="text-ink font-bold text-lg">75 SOL + 200M Tokens</p>
                     </div>
                     <div>
-                      <p className="text-gray-400">Market Cap</p>
-                      <p className="text-white font-bold text-lg">{formatMarketCap(marketCap)}</p>
+                      <p className="text-muted">Market Cap</p>
+                      <p className="text-ink font-bold text-lg">{formatMarketCap(marketCap)}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400">DEX</p>
-                      <p className="text-purple-400 font-bold text-lg">Raydium</p>
+                      <p className="text-muted">DEX</p>
+                      <p className="text-brand font-bold text-lg">Raydium</p>
                     </div>
                   </div>
                 </div>
@@ -996,16 +996,16 @@ export default function TokenPage() {
                   🏊 Trade on Raydium →
                 </a>
 
-                <p className="text-gray-400 text-xs text-center mt-3">
+                <p className="text-muted text-xs text-center mt-3">
                   Bonding curve trading is closed. All trading happens on Raydium.
                 </p>
               </div>
             ) : (
               // Active Bonding Curve - Show Trading Interface
-              <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
-                <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">Trade</h2>
+              <div className="bg-white rounded-xl p-4 sm:p-6 border-2 border-line">
+                <h2 className="text-xl sm:text-2xl font-bold text-ink mb-4">Trade</h2>
                 <div className="mb-6">
-                  <label className="block text-white font-semibold mb-2 text-sm sm:text-base">Buy Tokens (SOL)</label>
+                  <label className="block text-ink font-semibold mb-2 text-sm sm:text-base">Buy Tokens (SOL)</label>
                   <div className="flex gap-2 sm:gap-3">
                     <input
                       type="number"
@@ -1013,21 +1013,21 @@ export default function TokenPage() {
                       min="0.01"
                       value={buyAmount}
                       onChange={(e) => setBuyAmount(e.target.value)}
-                      className="flex-1 bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white outline-none text-sm sm:text-base"
+                      className="flex-1 bg-white border-2 border-line focus:border-brand rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-ink outline-none text-sm sm:text-base"
                       placeholder="SOL"
                       disabled={token.bondingCurveStatus !== 'valid' || !token.isActive}
                     />
                     <button
                       onClick={handleBuy}
                       disabled={trading || !connected || token.bondingCurveStatus !== 'valid' || !token.isActive}
-                      className={`font-bold px-4 sm:px-8 py-2 sm:py-3 rounded-lg transition text-sm sm:text-base whitespace-nowrap ${token.bondingCurveStatus === 'valid' && token.isActive ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-600 cursor-not-allowed'
+                      className={`font-bold px-4 sm:px-8 py-2 sm:py-3 rounded-lg transition text-sm sm:text-base whitespace-nowrap ${token.bondingCurveStatus === 'valid' && token.isActive ? 'bg-green-500 hover:bg-green-600' : 'bg-[#d9c9ed] cursor-not-allowed'
                         } text-white`}
                     >
                       {token.bondingCurveStatus !== 'valid' ? 'Not Available' : !token.isActive ? 'Trading Paused' : trading ? 'Buying...' : 'Buy'}
                     </button>
                   </div>
                   {token.bondingCurveStatus === 'valid' && token.isActive && (
-                    <p className="text-gray-400 text-xs sm:text-sm mt-2">
+                    <p className="text-muted text-xs sm:text-sm mt-2">
                       {(() => {
                         const buyAmountParsed = parseFloat(buyAmount);
                         if (!buyAmountParsed || buyAmountParsed <= 0) return 'Enter amount';
@@ -1051,7 +1051,7 @@ export default function TokenPage() {
                 </div>
 
                 <div>
-                  <label className="block text-white font-semibold mb-2 text-sm sm:text-base">
+                  <label className="block text-ink font-semibold mb-2 text-sm sm:text-base">
                     Sell Tokens
                   </label>
                   <div className="flex gap-2 sm:gap-3">
@@ -1062,7 +1062,7 @@ export default function TokenPage() {
                         min="1"
                         value={sellAmount}
                         onChange={(e) => setSellAmount(e.target.value)}
-                        className="w-full bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white outline-none text-sm sm:text-base pr-16"
+                        className="w-full bg-white border-2 border-line focus:border-brand rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-ink outline-none text-sm sm:text-base pr-16"
                         placeholder="Amount"
                         disabled={token.bondingCurveStatus !== 'valid' || !token.isActive}
                       />
@@ -1073,7 +1073,7 @@ export default function TokenPage() {
                             const maxSellable = Math.max(0, userTokenBalance - 0.000001);
                             setSellAmount(maxSellable.toString());
                           }}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-3 py-1 rounded text-xs transition"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-brand hover:bg-brand text-white font-bold px-3 py-1 rounded text-xs transition"
                         >
                           MAX
                         </button>
@@ -1091,7 +1091,7 @@ export default function TokenPage() {
                       }
                       className={`font-bold px-4 sm:px-8 py-2 sm:py-3 rounded-lg transition text-sm sm:text-base whitespace-nowrap ${token.bondingCurveStatus === 'valid' && token.isActive
                           ? 'bg-red-500 hover:bg-red-600'
-                          : 'bg-gray-600 cursor-not-allowed'
+                          : 'bg-[#d9c9ed] cursor-not-allowed'
                         } text-white`}
                     >
                       {token.bondingCurveStatus !== 'valid'
@@ -1104,7 +1104,7 @@ export default function TokenPage() {
                     </button>
                   </div>
                   {userTokenBalance !== null && token.bondingCurveStatus === 'valid' && (
-                    <p className="text-gray-400 text-xs sm:text-sm mt-2">
+                    <p className="text-muted text-xs sm:text-sm mt-2">
                       Balance: {userTokenBalance.toLocaleString()} {token.symbol}
                     </p>
                   )}
@@ -1120,24 +1120,24 @@ export default function TokenPage() {
               token.bondingCurveStatus === 'valid' &&
               token.isActive && (
                 // Token graduated but not yet processed - can still claim
-                <div className="bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 rounded-xl p-6 border-2 border-yellow-400">
-                  <h3 className="text-2xl font-bold text-white mb-3">🎁 Claim Your Dev Tokens</h3>
-                  <p className="text-gray-300 mb-4">
+                <div className="bg-gradient-to-r from-brand/15 to-mint/15 rounded-xl p-6 border-2 border-brand">
+                  <h3 className="text-2xl font-bold text-ink mb-3">🎁 Claim Your Dev Tokens</h3>
+                  <p className="text-[#4c4459] mb-4">
                     Your token has graduated! Claim your 30M developer allocation NOW before platform processes the pool.
                   </p>
                   <div className="bg-red-500/20 border border-red-500 rounded-lg p-4 mb-4">
-                    <p className="text-red-400 font-bold text-sm">⚠️ URGENT - CLAIM IMMEDIATELY!</p>
-                    <p className="text-gray-300 text-xs mt-2">
+                    <p className="text-rose-500 font-bold text-sm">⚠️ URGENT - CLAIM IMMEDIATELY!</p>
+                    <p className="text-[#4c4459] text-xs mt-2">
                       Platform can process graduation funds at any time. Once processed, dev tokens can NO LONGER be claimed.
                     </p>
-                    <p className="text-orange-400 text-xs mt-1 font-bold">
+                    <p className="text-orange-500 text-xs mt-1 font-bold">
                       Unclaimed tokens will be transferred to platform!
                     </p>
                   </div>
                   <button
                     onClick={handleClaimDevTokens}
                     disabled={trading}
-                    className="w-full bg-yellow-400 hover:bg-yellow-500 disabled:bg-gray-600 text-black font-bold py-4 rounded-lg transition text-lg animate-pulse"
+                    className="w-full bg-brand hover:bg-brand disabled:bg-[#d9c9ed] text-white font-bold py-4 rounded-lg transition text-lg animate-pulse"
                   >
                     {trading ? 'Claiming...' : '🎁 CLAIM 30M DEV TOKENS NOW'}
                   </button>
@@ -1150,23 +1150,23 @@ export default function TokenPage() {
               token.creator === publicKey.toBase58() &&
               token.graduated &&
               !token.isActive && (
-                <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
-                  <h3 className="text-xl font-bold text-gray-400 mb-2">Developer Allocation</h3>
-                  <p className="text-gray-500 text-sm">
+                <div className="bg-panel/60 border border-line rounded-xl p-6">
+                  <h3 className="text-xl font-bold text-muted mb-2">Developer Allocation</h3>
+                  <p className="text-[#8a8291] text-sm">
                     Graduation funds have been processed. Dev tokens were either claimed or transferred to platform.
                   </p>
                 </div>
               )}
 
             {/* Transactions */}
-            <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
-              <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">Recent Transactions</h2>
+            <div className="bg-white rounded-xl p-4 sm:p-6 border-2 border-line">
+              <h2 className="text-xl sm:text-2xl font-bold text-ink mb-4">Recent Transactions</h2>
               {trades.length === 0 ? (
-                <p className="text-gray-400 text-center py-8">No transactions yet</p>
+                <p className="text-muted text-center py-8">No transactions yet</p>
               ) : (
                 <div className="space-y-3 max-h-[500px] overflow-y-auto">
                   {trades.slice(-20).reverse().map((trade, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-black/50 rounded-lg border border-gray-800 hover:border-gray-700 transition">
+                    <div key={idx} className="flex items-center justify-between p-3 bg-white/70 rounded-lg border border-line hover:border-line transition">
                       <div className="flex items-center gap-3">
                         <div className={`px-2 py-1 rounded text-xs font-bold ${trade.type === 'buy' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                           {trade.type.toUpperCase()}
@@ -1174,21 +1174,21 @@ export default function TokenPage() {
 
                         <div>
                           <div className="flex items-center gap-2">
-                            <p className="text-white font-semibold">{trade.tokens.toFixed(2)}M tokens</p>
+                            <p className="text-ink font-semibold">{trade.tokens.toFixed(2)}M tokens</p>
                             {trade.user === token.creator && (
-                              <span className="bg-yellow-400/20 text-yellow-400 text-xs font-bold px-2 py-0.5 rounded">
+                              <span className="bg-brand/15 text-brand text-xs font-bold px-2 py-0.5 rounded">
                                 DEV
                               </span>
                             )}
                           </div>
-                          <p className="text-gray-400 text-sm">{trade.sol.toFixed(3)} SOL</p>
+                          <p className="text-muted text-sm">{trade.sol.toFixed(3)} SOL</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <a href={`https://solscan.io/tx/${trade.signature}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-400 text-sm transition block">
+                        <a href={`https://solscan.io/tx/${trade.signature}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="text-ink hover:text-brand text-sm transition block">
                           View Tx →
                         </a>
-                        <p className="text-gray-500 text-xs mt-1">{new Date(trade.timestamp * 1000).toLocaleTimeString()}</p>
+                        <p className="text-[#8a8291] text-xs mt-1">{new Date(trade.timestamp * 1000).toLocaleTimeString()}</p>
                       </div>
                     </div>
                   ))}
@@ -1197,33 +1197,33 @@ export default function TokenPage() {
             </div>
 
             {/* Holders List */}
-            <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
+            <div className="bg-white rounded-xl p-4 sm:p-6 border-2 border-line">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl sm:text-2xl font-bold text-white">Top Holders</h2>
-                <span className="text-gray-400 text-sm">{holderCount !== null ? `${holderCount} holders` : 'Loading...'}</span>
+                <h2 className="text-xl sm:text-2xl font-bold text-ink">Top Holders</h2>
+                <span className="text-muted text-sm">{holderCount !== null ? `${holderCount} holders` : 'Loading...'}</span>
               </div>
               {holdersList.length === 0 ? (
-                <p className="text-gray-400 text-center py-8">Loading holders...</p>
+                <p className="text-muted text-center py-8">Loading holders...</p>
               ) : (
                 <div className="space-y-3 max-h-[500px] overflow-y-auto">
                   {holdersList.map((holder, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-black/50 rounded-lg border border-gray-800">
+                    <div key={idx} className="flex items-center justify-between p-3 bg-white/70 rounded-lg border border-line">
                       <div className="flex items-center gap-3">
-                        <span className="text-gray-400 font-mono text-sm">#{idx + 1}</span>
+                        <span className="text-muted font-mono text-sm">#{idx + 1}</span>
                         <div className="flex items-center gap-2">
-                          <a href={`https://solscan.io/account/${holder.address}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="text-white hover:text-yellow-400 font-mono text-sm transition">
+                          <a href={`https://solscan.io/account/${holder.address}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="text-ink hover:text-brand font-mono text-sm transition">
                             {holder.address.slice(0, 4)}...{holder.address.slice(-4)}
                           </a>
                           {holder.address === token.creator && (
-                            <span className="bg-yellow-400/20 text-yellow-400 text-xs font-bold px-2 py-0.5 rounded">
+                            <span className="bg-brand/15 text-brand text-xs font-bold px-2 py-0.5 rounded">
                               DEV
                             </span>
                           )}
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-white font-semibold">{holder.balance.toFixed(2)}M</p>
-                        <p className="text-gray-400 text-xs">{holder.percentage.toFixed(2)}%</p>
+                        <p className="text-ink font-semibold">{holder.balance.toFixed(2)}M</p>
+                        <p className="text-muted text-xs">{holder.percentage.toFixed(2)}%</p>
                       </div>
                     </div>
                   ))}
@@ -1232,32 +1232,32 @@ export default function TokenPage() {
             </div>
 
             {/* Dev Activity */}
-            <div className="bg-gray-900 rounded-xl p-4 border-2 border-gray-800">
-              <h3 className="text-white font-semibold mb-3">Creator Activity</h3>
+            <div className="bg-white rounded-xl p-4 border-2 border-line">
+              <h3 className="text-ink font-semibold mb-3">Creator Activity</h3>
 
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Creator</span>
+                  <span className="text-muted">Creator</span>
                   <a
                     href={`https://solscan.io/account/${token.creator}?cluster=devnet`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-yellow-400 hover:text-yellow-300 font-mono transition"
+                    className="text-brand hover:text-brand font-mono transition"
                   >
                     {token.creator.slice(0, 4)}...{token.creator.slice(-4)}
                   </a>
                 </div>
 
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Dev Trades</span>
-                  <span className="text-white font-semibold">
+                  <span className="text-muted">Dev Trades</span>
+                  <span className="text-ink font-semibold">
                     {trades.filter(t => t.user === token.creator).length}
                   </span>
                 </div>
 
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Dev Holdings</span>
-                  <span className="text-white font-semibold">
+                  <span className="text-muted">Dev Holdings</span>
+                  <span className="text-ink font-semibold">
                     {(() => {
                       const devHolder = holdersList.find(h => h.address === token.creator);
                       return devHolder ? `${devHolder.balance.toFixed(2)}M (${devHolder.percentage.toFixed(2)}%)` : '0';
@@ -1268,31 +1268,31 @@ export default function TokenPage() {
             </div>
 
             {/* Comments Section */}
-            <div className="bg-gray-900 rounded-xl p-4 sm:p-6 border-2 border-gray-800">
-              <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">💬 Community Chat</h2>
+            <div className="bg-white rounded-xl p-4 sm:p-6 border-2 border-line">
+              <h2 className="text-xl sm:text-2xl font-bold text-ink mb-4">💬 Community Chat</h2>
 
               <div className="space-y-3 max-h-[400px] overflow-y-auto mb-4">
                 {comments.length === 0 ? (
-                  <p className="text-gray-400 text-center py-8">No comments yet. Be the first!</p>
+                  <p className="text-muted text-center py-8">No comments yet. Be the first!</p>
                 ) : (
                   comments.map((comment) => (
-                    <div key={comment.id} className="bg-black/50 rounded-lg p-3 border border-gray-800">
+                    <div key={comment.id} className="bg-white/70 rounded-lg p-3 border border-line">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-yellow-400 font-mono text-sm">
+                          <span className="text-brand font-mono text-sm">
                             {comment.user.slice(0, 4)}...{comment.user.slice(-4)}
                           </span>
                           {comment.user === token.creator && (
-                            <span className="bg-yellow-400/20 text-yellow-400 text-xs font-bold px-2 py-0.5 rounded">
+                            <span className="bg-brand/15 text-brand text-xs font-bold px-2 py-0.5 rounded">
                               DEV
                             </span>
                           )}
                         </div>
-                        <span className="text-gray-500 text-xs">
+                        <span className="text-[#8a8291] text-xs">
                           {new Date(comment.timestamp).toLocaleTimeString()}
                         </span>
                       </div>
-                      <p className="text-white text-sm">{comment.message}</p>
+                      <p className="text-ink text-sm">{comment.message}</p>
                     </div>
                   ))
                 )}
@@ -1305,20 +1305,20 @@ export default function TokenPage() {
                     value={commentMessage}
                     onChange={(e) => setCommentMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handlePostComment()}
-                    className="flex-1 bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-4 py-3 text-white outline-none text-sm"
+                    className="flex-1 bg-white border-2 border-line focus:border-brand rounded-lg px-4 py-3 text-ink outline-none text-sm"
                     placeholder="Say something..."
                     maxLength={500}
                   />
                   <button
                     onClick={handlePostComment}
                     disabled={!commentMessage.trim()}
-                    className="bg-yellow-400 hover:bg-yellow-500 disabled:bg-gray-600 text-black font-bold px-6 py-3 rounded-lg transition"
+                    className="bg-brand hover:bg-brand disabled:bg-[#d9c9ed] text-white font-bold px-6 py-3 rounded-lg transition"
                   >
                     Send
                   </button>
                 </div>
               ) : (
-                <p className="text-gray-400 text-center py-4">Connect wallet to comment</p>
+                <p className="text-muted text-center py-4">Connect wallet to comment</p>
               )}
             </div>
           </div>

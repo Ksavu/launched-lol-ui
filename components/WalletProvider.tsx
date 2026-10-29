@@ -1,12 +1,14 @@
 'use client';
 
+import { RPC_URL } from '../lib/rpc';
+
 import { FC, ReactNode, useEffect } from 'react';
 import { ConnectionProvider, WalletProvider as SolanaWalletProvider } from '@solana/wallet-adapter-react';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
 
 export const WalletProvider: FC<{ children: ReactNode }> = ({ children }) => {
-  const endpoint = 'https://api.devnet.solana.com';
+  const endpoint = RPC_URL;
 
   // Suppress MetaMask errors
   useEffect(() => {

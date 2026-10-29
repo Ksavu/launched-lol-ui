@@ -361,15 +361,15 @@ resetForm();
 };
 
   return (
-  <div className="min-h-screen bg-black">
+  <div className="min-h-screen bg-page">
     <Header />
     
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="text-center mb-8">
-        <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+        <h1 className="text-4xl md:text-5xl font-bold text-ink mb-4">
           Create Your Token
         </h1>
-        <p className="text-gray-400">
+        <p className="text-muted">
           Launch your token on Solana with a fair bonding curve
         </p>
 </div>
@@ -389,31 +389,30 @@ resetForm();
         />
       )}
 
-      </div>
 
       {!connected ? (
-        <div className="bg-gray-900 rounded-xl p-12 text-center border-2 border-yellow-400/20">
-          <h2 className="text-2xl font-bold text-white mb-4">
+        <div className="bg-white rounded-xl p-12 text-center border-2 border-brand/25">
+          <h2 className="text-2xl font-bold text-ink mb-4">
             Connect Your Wallet
           </h2>
-          <p className="text-gray-400">
+          <p className="text-muted">
             Please connect your Solana wallet to create a token
           </p>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="bg-gray-900 rounded-xl p-8 border-2 border-yellow-400/20">
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl p-8 border-2 border-brand/25">
           {/* Token Image */}
           <div className="mb-6">
-            <label className="block text-white font-semibold mb-2">
+            <label className="block text-ink font-semibold mb-2">
               Token Image
             </label>
             <div className="flex items-center space-x-4">
               {imagePreview && (
-                <div className="w-24 h-24 relative rounded-lg overflow-hidden border-2 border-yellow-400">
+                <div className="w-24 h-24 relative rounded-lg overflow-hidden border-2 border-brand">
                   <Image src={imagePreview} alt="Preview" fill className="object-cover" />
                 </div>
               )}
-              <label className="cursor-pointer bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-6 py-3 rounded-lg transition">
+              <label className="cursor-pointer bg-brand hover:bg-brand text-white font-bold px-6 py-3 rounded-lg transition">
                 <input
                   type="file"
                   accept="image/*"
@@ -423,13 +422,13 @@ resetForm();
                 Choose Image
               </label>
             </div>
-            <p className="text-sm text-gray-400 mt-2">Recommended: 512x512px, PNG or JPG</p>
+            <p className="text-sm text-muted mt-2">Recommended: 512x512px, PNG or JPG</p>
           </div>
 
           {/* Token Name */}
           <div className="mb-6">
-            <label className="block text-white font-semibold mb-2">
-              Token Name <span className="text-red-500">*</span>
+            <label className="block text-ink font-semibold mb-2">
+              Token Name <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
@@ -437,16 +436,16 @@ resetForm();
               maxLength={32}
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
-              className="w-full bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-4 py-3 text-white outline-none"
+              className="w-full bg-white border-2 border-line focus:border-brand rounded-lg px-4 py-3 text-ink outline-none"
               placeholder="e.g., Moon Token"
             />
-            <p className="text-sm text-gray-400 mt-1">{formData.name.length}/32 characters</p>
+            <p className="text-sm text-muted mt-1">{formData.name.length}/32 characters</p>
           </div>
 
           {/* Token Symbol */}
           <div className="mb-6">
-            <label className="block text-white font-semibold mb-2">
-              Token Symbol <span className="text-red-500">*</span>
+            <label className="block text-ink font-semibold mb-2">
+              Token Symbol <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
@@ -454,15 +453,15 @@ resetForm();
               maxLength={10}
               value={formData.symbol}
               onChange={(e) => setFormData({...formData, symbol: e.target.value.toUpperCase()})}
-              className="w-full bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-4 py-3 text-white outline-none"
+              className="w-full bg-white border-2 border-line focus:border-brand rounded-lg px-4 py-3 text-ink outline-none"
               placeholder="e.g., MOON"
             />
-            <p className="text-sm text-gray-400 mt-1">{formData.symbol.length}/10 characters</p>
+            <p className="text-sm text-muted mt-1">{formData.symbol.length}/10 characters</p>
           </div>
 
           {/* Description */}
           <div className="mb-6">
-            <label className="block text-white font-semibold mb-2">
+            <label className="block text-ink font-semibold mb-2">
               Description
             </label>
             <textarea
@@ -470,19 +469,19 @@ resetForm();
               onChange={(e) => setFormData({...formData, description: e.target.value})}
               rows={4}
               maxLength={500}
-              className="w-full bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-4 py-3 text-white outline-none"
+              className="w-full bg-white border-2 border-line focus:border-brand rounded-lg px-4 py-3 text-ink outline-none"
               placeholder="Describe your token..."
             />
           </div>
 
           {/* Social Links */}
 <div className="mb-6">
-  <label className="block text-white font-semibold mb-3">
+  <label className="block text-ink font-semibold mb-3">
     Social Links 
     {formData.tier === 'premium' ? (
-      <span className="text-red-400 text-sm font-normal"> (Required for Premium)</span>
+      <span className="text-rose-500 text-sm font-normal"> (Required for Premium)</span>
     ) : (
-      <span className="text-gray-400 text-sm font-normal"> (Optional)</span>
+      <span className="text-muted text-sm font-normal"> (Optional)</span>
     )}
   </label>
   
@@ -493,8 +492,8 @@ resetForm();
     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
       <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
     </svg>
-    <span className="text-gray-400 text-sm">X (Twitter)</span>
-    {formData.tier === 'premium' && <span className="text-red-400">*</span>}
+    <span className="text-muted text-sm">X (Twitter)</span>
+    {formData.tier === 'premium' && <span className="text-rose-500">*</span>}
   </div>
   <input
     type="url"
@@ -503,7 +502,7 @@ resetForm();
     className={`w-full bg-black border-2 ${
       formData.tier === 'premium' && !formData.twitter 
         ? 'border-red-500' 
-        : 'border-gray-700'
+        : 'border-line'
     } focus:border-yellow-400 rounded-lg px-4 py-3 text-white outline-none text-sm`}
     placeholder="https://x.com/yourtoken"
     required={formData.tier === 'premium'}
@@ -516,8 +515,8 @@ resetForm();
     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
       <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.461-1.901-.903-1.056-.692-1.653-1.123-2.678-1.799-1.185-.781-.417-1.21.258-1.911.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.242-1.865-.442-.752-.244-1.349-.374-1.297-.789.027-.216.324-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635.099-.002.321.023.465.141.121.099.154.232.17.326.016.094.036.308.02.475z"/>
     </svg>
-    <span className="text-gray-400 text-sm">Telegram</span>
-    {formData.tier === 'premium' && <span className="text-red-400">*</span>}
+    <span className="text-muted text-sm">Telegram</span>
+    {formData.tier === 'premium' && <span className="text-rose-500">*</span>}
   </div>
   <input
     type="url"
@@ -526,7 +525,7 @@ resetForm();
     className={`w-full bg-black border-2 ${
       formData.tier === 'premium' && !formData.telegram 
         ? 'border-red-500' 
-        : 'border-gray-700'
+        : 'border-line'
     } focus:border-yellow-400 rounded-lg px-4 py-3 text-white outline-none text-sm`}
     placeholder="https://t.me/yourtoken"
     required={formData.tier === 'premium'}
@@ -541,20 +540,20 @@ resetForm();
       <line x1="2" y1="12" x2="22" y2="12"/>
       <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
     </svg>
-    <span className="text-gray-400 text-sm">Website</span>
+    <span className="text-muted text-sm">Website</span>
   </div>
   <input
     type="url"
     value={formData.website}
     onChange={(e) => setFormData({...formData, website: e.target.value})}
-    className="w-full bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-4 py-3 text-white outline-none text-sm"
+    className="w-full bg-white border-2 border-line focus:border-brand rounded-lg px-4 py-3 text-ink outline-none text-sm"
     placeholder="https://yourtoken.com"
   />
 </div>
   
   {/* Add this warning */}
   {formData.tier === 'premium' && (!formData.twitter || !formData.telegram) && (
-    <p className="text-red-400 text-sm mt-2">
+    <p className="text-rose-500 text-sm mt-2">
       ⚠️ Premium tokens require X (Twitter) and Telegram links
     </p>
   )}
@@ -563,13 +562,13 @@ resetForm();
 
           {/* Category */}
           <div className="mb-6">
-            <label className="block text-white font-semibold mb-2">
+            <label className="block text-ink font-semibold mb-2">
               Category
             </label>
             <select
               value={formData.category}
               onChange={(e) => setFormData({...formData, category: e.target.value as any})}
-              className="w-full bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-4 py-3 text-white outline-none"
+              className="w-full bg-white border-2 border-line focus:border-brand rounded-lg px-4 py-3 text-ink outline-none"
             >
               <option value="meme">🎭 Meme</option>
               <option value="ai">🤖 AI</option>
@@ -582,7 +581,7 @@ resetForm();
 
           {/* Tier Selection */}
           <div className="mb-6">
-            <label className="block text-white font-semibold mb-3">
+            <label className="block text-ink font-semibold mb-3">
               Launch Tier
             </label>
             <div className="grid md:grid-cols-2 gap-4">
@@ -591,16 +590,16 @@ resetForm();
                 onClick={() => setFormData({...formData, tier: 'free', antiBotEnabled: false})}
                 className={`cursor-pointer p-6 rounded-xl border-2 transition ${
                   formData.tier === 'free'
-                    ? 'border-yellow-400 bg-yellow-400/10'
-                    : 'border-gray-700 hover:border-gray-600'
+                    ? 'border-brand bg-brand/10'
+                    : 'border-line hover:border-[#b79ad8]'
                 }`}
               >
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-xl font-bold text-white">Free</h3>
-                  <span className="text-2xl font-bold text-yellow-400">0.02 SOL</span>
+                  <h3 className="text-xl font-bold text-ink">Free</h3>
+                  <span className="text-2xl font-bold text-brand">0.02 SOL</span>
                 </div>
-                <p className="text-sm text-gray-400">~$2</p>
-                <ul className="mt-4 space-y-2 text-sm text-gray-400">
+                <p className="text-sm text-muted">~$2</p>
+                <ul className="mt-4 space-y-2 text-sm text-muted">
                   <li>✓ Basic listing</li>
                   <li>✓ Bonding curve</li>
                   <li>✓ Address ends in ...LoL</li>
@@ -614,16 +613,16 @@ resetForm();
                 onClick={() => setFormData({...formData, tier: 'premium'})}
                 className={`cursor-pointer p-6 rounded-xl border-2 transition ${
                   formData.tier === 'premium'
-                    ? 'border-yellow-400 bg-yellow-400/10'
-                    : 'border-gray-700 hover:border-gray-600'
+                    ? 'border-brand bg-brand/10'
+                    : 'border-line hover:border-[#b79ad8]'
                 }`}
               >
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-xl font-bold text-white">Premium</h3>
-                  <span className="text-2xl font-bold text-yellow-400">0.5 SOL</span>
+                  <h3 className="text-xl font-bold text-ink">Premium</h3>
+                  <span className="text-2xl font-bold text-brand">0.5 SOL</span>
                 </div>
-                <p className="text-sm text-gray-400">~$94</p>
-                <ul className="mt-4 space-y-2 text-sm text-gray-400">
+                <p className="text-sm text-muted">~$94</p>
+                <ul className="mt-4 space-y-2 text-sm text-muted">
                   <li>✓ Featured placement</li>
                   <li>✓ Category badge</li>
                   <li>✓ Premium badge</li>
@@ -635,7 +634,7 @@ resetForm();
           </div>
 
           {formData.tier === 'premium' && (
-            <div className="mb-6 bg-black/50 p-4 rounded-xl border border-yellow-400/30 flex gap-3">
+            <div className="mb-6 bg-white/70 p-4 rounded-xl border border-brand/30 flex gap-3">
               {(['vanity', 'random'] as const).map((c) => (
                 <button type="button" key={c} onClick={() => setVanityChoice(c)}
                   className={`flex-1 p-3 rounded-lg border-2 text-sm font-semibold ${vanityChoice === c ? 'border-yellow-400 text-yellow-400' : 'border-gray-700 text-gray-400'}`}>
@@ -645,7 +644,7 @@ resetForm();
             </div>
           )}
           {needsVanity && (
-            <p className="mb-4 text-yellow-400 text-sm">
+            <p className="mb-4 text-brand text-sm">
               {vanityReady
                 ? '✅ ...LoL address ready'
                 : `🔎 Generating ...LoL address in background… ${grindAttempts.toLocaleString()} tries${grinding ? ' (finishing, please wait)' : ''}`}
@@ -654,11 +653,11 @@ resetForm();
 
           {/* Anti-Bot Toggle (Premium Only) */}
           {formData.tier === 'premium' && (
-            <div className="mb-6 bg-black/50 p-6 rounded-xl border border-yellow-400/30">
+            <div className="mb-6 bg-white/70 p-6 rounded-xl border border-brand/30">
               <label className="flex items-center justify-between cursor-pointer">
                 <div>
-                  <h3 className="text-white font-semibold mb-1">Anti-Bot Protection</h3>
-                  <p className="text-sm text-gray-400">
+                  <h3 className="text-ink font-semibold mb-1">Anti-Bot Protection</h3>
+                  <p className="text-sm text-muted">
                     Max 2% buy in first 5 minutes to prevent sniping
                   </p>
                 </div>
@@ -674,7 +673,7 @@ resetForm();
 
           {/* Launch Delay */}
           <div className="mb-8">
-            <label className="block text-white font-semibold mb-2">
+            <label className="block text-ink font-semibold mb-2">
               Launch Countdown: {formData.launchDelay} seconds
             </label>
             <input
@@ -686,20 +685,20 @@ resetForm();
               onChange={(e) => setFormData({...formData, launchDelay: parseInt(e.target.value)})}
               className="w-full"
             />
-            <div className="flex justify-between text-sm text-gray-400 mt-1">
+            <div className="flex justify-between text-sm text-muted mt-1">
               <span>Instant</span>
               <span>5 minutes</span>
             </div>
           </div>
 
           {/* Dev Buy Option */}
-          <div className="mb-8 bg-black/50 p-6 rounded-xl border border-yellow-400/30">
-            <h3 className="text-white font-semibold mb-2">🎯 Optional: Buy Initial Supply</h3>
-            <p className="text-sm text-gray-400 mb-4">
+          <div className="mb-8 bg-white/70 p-6 rounded-xl border border-brand/30">
+            <h3 className="text-ink font-semibold mb-2">🎯 Optional: Buy Initial Supply</h3>
+            <p className="text-sm text-muted mb-4">
               Buy tokens immediately after creation. Shows commitment and starts your position.
             </p>
             
-            <label className="block text-white font-semibold mb-2">
+            <label className="block text-ink font-semibold mb-2">
               Buy Amount (SOL)
             </label>
             <input
@@ -709,12 +708,12 @@ resetForm();
               max="5"
               value={formData.devBuyAmount}
               onChange={(e) => setFormData({...formData, devBuyAmount: parseFloat(e.target.value) || 0})}
-              className="w-full bg-black border-2 border-gray-700 focus:border-yellow-400 rounded-lg px-4 py-3 text-white outline-none"
+              className="w-full bg-white border-2 border-line focus:border-brand rounded-lg px-4 py-3 text-ink outline-none"
               placeholder="0 (no buy) or 0.1-5.0 SOL"
             />
             
             {formData.devBuyAmount > 0 && (
-              <div className="mt-3 p-3 bg-yellow-400/10 rounded-lg">
+              <div className="mt-3 p-3 bg-brand/10 rounded-lg">
                 {(() => {
                   const solAfterFee = formData.devBuyAmount * 0.99;
       
@@ -730,20 +729,20 @@ resetForm();
                   const percentOfSupply = (tokensReceived / 1000000000) * 100;
       
                   return (
-                    <p className="text-sm text-yellow-400">
+                    <p className="text-sm text-brand">
                       📊 You'll receive approximately {tokensReceived >= 1000000 
                         ? `${(tokensReceived / 1000000).toFixed(2)}M` 
                         : `${(tokensReceived / 1000).toFixed(1)}K`} tokens (~{percentOfSupply.toFixed(2)}%)
                     </p>
                   );
                 })()}
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-muted mt-1">
                   Total cost: {(parseFloat(formData.tier === 'free' ? '0.02' : '0.5') + formData.devBuyAmount).toFixed(2)} SOL
                 </p>
               </div>
             )}
             
-            <p className="text-xs text-gray-500 mt-3">
+            <p className="text-xs text-[#8a8291] mt-3">
               💡 Tip: 0.5-1 SOL buy shows strong commitment to your token
             </p>
           </div>
@@ -752,7 +751,7 @@ resetForm();
           <button
             type="submit"
             disabled={isCreating || !imageFile}
-            className="w-full bg-yellow-400 hover:bg-yellow-500 disabled:bg-gray-600 text-black font-bold py-4 rounded-lg transition text-lg"
+            className="w-full bg-brand hover:bg-brand disabled:bg-[#d9c9ed] text-white font-bold py-4 rounded-lg transition text-lg"
           >
             {isCreating 
               ? 'Creating...' 
@@ -761,12 +760,13 @@ resetForm();
           </button>
 
           {!imageFile && (
-            <p className="text-center text-red-400 text-sm mt-2">
+            <p className="text-center text-rose-500 text-sm mt-2">
               Please upload an image to continue
             </p>
           )}
         </form>
-      )} 
+      )}
     </div>
+  </div>
 );
 } 
