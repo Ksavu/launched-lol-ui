@@ -3,7 +3,7 @@ import { Connection, PublicKey } from '@solana/web3.js';
 import { RPC_URL } from '../../../../lib/rpc';
 
 const connection = new Connection(RPC_URL, 'confirmed');
-const BONDING_CURVE_PROGRAM_ID = new PublicKey('21ACVywCBCgrgAx8HpLJM6mJC8pxMzvvi58in5Xv7qej');
+const BONDING_CURVE_PROGRAM_ID = new PublicKey('7z8fMX1X3VzPjsFjcc2KafwfGmchWXM5QmVHyDcsXiKi');
 
 interface Trade {
   type: 'buy' | 'sell';
@@ -13,6 +13,8 @@ interface Trade {
   timestamp: number;
   signature: string;
   user: string;
+  tax?: number; // SOL taxed in this trade
+  taxReason?: 'block0' | 'ath';
 }
 
 export async function GET(
@@ -53,6 +55,17 @@ export async function GET(
         
         const logs = tx.meta.logMessages || [];
         
+        // Jeet tax line (emitted by the program): "Jeet tax: 12345 SOL (block0|ath)"
+        let tax = 0;
+        let taxReason: 'block0' | 'ath' | undefined;
+        for (const log of logs) {
+          const t = log.match(/Jeet tax: (\d+) SOL \((block0|ath)\)/);
+          if (t) {
+            tax = parseInt(t[1]) / 1_000_000_000;
+            taxReason = t[2] as 'block0' | 'ath';
+          }
+        }
+
         // Look for buy/sell logs
         for (const log of logs) {
           // Match: "Bought 33223620 tokens for 990000000 SOL (fee: 10000000)"
@@ -72,6 +85,7 @@ export async function GET(
               timestamp: tx.blockTime,
               signature: sig.signature,
               user,
+              ...(tax > 0 ? { tax, taxReason } : {}),
             });
           }
           
@@ -92,6 +106,7 @@ export async function GET(
               timestamp: tx.blockTime,
               signature: sig.signature,
               user,
+              ...(tax > 0 ? { tax, taxReason } : {}),
             });
           }
         }

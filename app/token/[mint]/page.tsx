@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { Header } from '../../../components/Header';
@@ -34,6 +36,9 @@ interface TokenData {
   virtualTokenReserves: number;
   totalSupply: number;
   verified?: boolean;
+  inAthZone?: boolean;
+  jeetTaxEnabled?: boolean;
+  jeetTaxTotal?: number;
 }
 
 interface CandleData {
@@ -789,7 +794,17 @@ export default function TokenPage() {
                   </svg>
                 )}
               </div>
-              <p className="text-muted text-base sm:text-lg mb-4">${token.symbol}</p>
+              <p className="text-muted text-base sm:text-lg mb-4">
+                ${token.symbol}
+                {token.jeetTaxEnabled && (
+                  <Link
+                    href="/tax"
+                    className="ml-2 rounded-full bg-brand/15 px-2.5 py-1 align-middle text-xs font-black text-brand hover:bg-brand/25"
+                  >
+                    🧾 Jeet tax on
+                  </Link>
+                )}
+              </p>
 
               {/* Bonding Curve Status Indicator */}
               {token.graduated && (
@@ -1049,6 +1064,13 @@ export default function TokenPage() {
                     </p>
                   )}
                 </div>
+
+                {token.inAthZone && (
+                  <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    ⚠️ <b>Jeet tax zone:</b> the price is within 1% of its all-time high. Selling now costs a 10% tax
+                    (it goes back into the curve).
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-ink font-semibold mb-2 text-sm sm:text-base">

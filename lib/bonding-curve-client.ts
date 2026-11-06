@@ -16,7 +16,7 @@ import {
 import { Buffer } from 'buffer';
 // Now Buffer will have writeBigInt64LE available
 
-const BONDING_CURVE_PROGRAM_ID = new PublicKey('21ACVywCBCgrgAx8HpLJM6mJC8pxMzvvi58in5Xv7qej');
+const BONDING_CURVE_PROGRAM_ID = new PublicKey('7z8fMX1X3VzPjsFjcc2KafwfGmchWXM5QmVHyDcsXiKi');
 const PLATFORM_WALLET = new PublicKey('GtcpcvS3k24MA3Yhs6bAd1spkdjYmx82KqRxSk6pPWhE'); 
 const RENT_SYSVAR = new PublicKey('SysvarRent111111111111111111111111111111111');
 
@@ -323,7 +323,8 @@ export async function initializeBondingCurve(
   treasuryAddress: string,
   isPremium: boolean,
   launchDelay: number,
-  enableAntiBot: boolean
+  enableAntiBot: boolean,
+  enableJeetTax: boolean = false
 ) {
   try {
     const mint = new PublicKey(mintAddress);
@@ -373,7 +374,7 @@ console.log('✅ No existing account found, proceeding with initialization');
     const curveAta = getAssociatedTokenAddressSync(mint, bondingCurve, true);
 
     // ========== CREATE INSTRUCTION DATA ==========
-    const data = Buffer.alloc(8 + 32 + 32 + 1 + 8 + 1); // 82 bytes
+    const data = Buffer.alloc(8 + 32 + 32 + 1 + 8 + 1 + 1); // 83 bytes
     
     // 1. Instruction discriminator for "initialize_curve"
     Buffer.from([170, 84, 186, 253, 131, 149, 95, 213]).copy(data, 0);
@@ -394,6 +395,9 @@ console.log('✅ No existing account found, proceeding with initialization');
     
     // 6. enable_anti_bot (bool - 1 byte)
     data.writeUInt8(enableAntiBot ? 1 : 0, 81);
+
+    // 7. enable_jeet_tax (bool - 1 byte) — Premium only; older program versions ignore it
+    data.writeUInt8(enableJeetTax ? 1 : 0, 82);
 
     console.log('📝 Instruction data prepared:');
     console.log('   Discriminator:', data.slice(0, 8).toString('hex'));

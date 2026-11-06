@@ -213,11 +213,12 @@ export default function Home() {
           <div className="eyebrow">⚡ EASY AS 1, 2, LOL</div>
           <h2 className="mt-2 text-4xl font-black tracking-tight">Serious tech. Silly good time.</h2>
           <p className="mb-7 text-muted">Built for simple launches, fair discovery and transparent trading.</p>
-          <div className="grid gap-5 md:grid-cols-3">
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
             {[
               { icon: '🎨', title: 'Make your meme', text: 'Pick a name, add an image and launch in a couple of clicks. Your token address even ends in LoL.' },
               { icon: '🛡️', title: 'Launch the fair way', text: 'Bonding-curve pricing, no presales, and optional Premium anti-bot protection: a launch countdown and purchase limits.' },
               { icon: '📈', title: 'Graduate to Raydium', text: 'Prices rise with demand. At 81 SOL the token graduates and its liquidity moves to Raydium.' },
+              { icon: '🧾', title: 'Jeets pay the tax', text: 'Bundle the opening block or dump at the all-time high and you pay 10%. Every tax instantly buys the coin back for holders.' },
             ].map((f) => (
               <div key={f.title} className="rounded-[28px] border border-line bg-white p-7 shadow-[0_9px_24px_#5f37821a]">
                 <div className="grid h-[58px] w-[58px] place-items-center rounded-[19px] bg-[#d1b1f2] text-3xl">{f.icon}</div>
@@ -246,10 +247,10 @@ export default function Home() {
             </div>
             <div className="rounded-[28px] border-2 border-brand bg-white p-7 shadow-[0_9px_24px_#5f37821a]">
               <div className="grid h-[58px] w-[58px] place-items-center rounded-[19px] bg-[#d1b1f2] text-3xl">✨</div>
-              <h3 className="mb-1 mt-4 text-xl font-bold">Premium Launch — 0.5 SOL</h3>
+              <h3 className="mb-1 mt-4 text-xl font-bold">Premium Launch — 1 SOL</h3>
               <p className="text-sm leading-relaxed text-muted">
-                Featured placement, Premium badge, verified socials, optional anti-bot (launch countdown and purchase
-                limits), and your choice of a <b>LoL</b> or random token address.
+                Protected Launch: optional anti-bot (launch countdown and purchase limits), optional 10% jeet tax,
+                verified socials, featured placement, and your choice of a <b>LoL</b> or random token address.
               </p>
               <Link href="/create" className="pill-btn pill-primary mt-6">Choose Premium</Link>
             </div>

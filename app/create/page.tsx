@@ -30,6 +30,7 @@ export default function CreateToken() {
     tier: 'free' as 'free' | 'premium',
     category: 'meme' as 'meme' | 'ai' | 'gaming' | 'defi' | 'nft' | 'other',
     antiBotEnabled: false,
+    jeetTaxEnabled: true,
     launchDelay: 60,
     devBuyAmount: 0,
     twitter: '',
@@ -46,6 +47,7 @@ export default function CreateToken() {
     tier: 'free',
     category: 'meme',
     antiBotEnabled: false,
+    jeetTaxEnabled: true,
     launchDelay: 60,
     devBuyAmount: 0,
     twitter: '',
@@ -244,7 +246,8 @@ try {
     treasuryWallet,
     formData.tier === 'premium',      // isPremium
     formData.launchDelay,              // launchDelay (0-300)
-    formData.antiBotEnabled            // enableAntiBot
+    formData.antiBotEnabled,           // enableAntiBot
+    formData.tier === 'premium' && formData.jeetTaxEnabled  // enableJeetTax
   );
   
   // Handle the new return format
@@ -619,9 +622,9 @@ resetForm();
               >
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="text-xl font-bold text-ink">Premium</h3>
-                  <span className="text-2xl font-bold text-brand">0.5 SOL</span>
+                  <span className="text-2xl font-bold text-brand">1 SOL</span>
                 </div>
-                <p className="text-sm text-muted">~$94</p>
+                <p className="text-sm text-muted">~$188</p>
                 <ul className="mt-4 space-y-2 text-sm text-muted">
                   <li>✓ Featured placement</li>
                   <li>✓ Category badge</li>
@@ -665,6 +668,27 @@ resetForm();
                   type="checkbox"
                   checked={formData.antiBotEnabled}
                   onChange={(e) => setFormData({...formData, antiBotEnabled: e.target.checked})}
+                  className="w-6 h-6"
+                />
+              </label>
+            </div>
+          )}
+
+          {/* Jeet Tax Toggle (Premium Only) */}
+          {formData.tier === 'premium' && (
+            <div className="mb-6 bg-white/70 p-6 rounded-xl border border-brand/30">
+              <label className="flex items-center justify-between cursor-pointer">
+                <div>
+                  <h3 className="text-ink font-semibold mb-1">🧾 Jeet Tax</h3>
+                  <p className="text-sm text-muted">
+                    10% tax on buys bundled in the first trading block and on sells within 1% of the all-time high.
+                    Taxed SOL goes back into the curve as an instant buyback for holders.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={formData.jeetTaxEnabled}
+                  onChange={(e) => setFormData({...formData, jeetTaxEnabled: e.target.checked})}
                   className="w-6 h-6"
                 />
               </label>
@@ -737,13 +761,13 @@ resetForm();
                   );
                 })()}
                 <p className="text-xs text-muted mt-1">
-                  Total cost: {(parseFloat(formData.tier === 'free' ? '0.02' : '0.5') + formData.devBuyAmount).toFixed(2)} SOL
+                  Total cost: {(parseFloat(formData.tier === 'free' ? '0.02' : '1') + formData.devBuyAmount).toFixed(2)} SOL
                 </p>
               </div>
             )}
             
             <p className="text-xs text-[#8a8291] mt-3">
-              💡 Tip: 0.5-1 SOL buy shows strong commitment to your token
+              💡 Tip: a 0.5-1 SOL buy shows strong commitment to your token
             </p>
           </div>
 
@@ -755,7 +779,7 @@ resetForm();
           >
             {isCreating 
               ? 'Creating...' 
-              : `Create Token (${(parseFloat(formData.tier === 'free' ? '0.02' : '0.5') + formData.devBuyAmount).toFixed(2)} SOL)`
+              : `Create Token (${(parseFloat(formData.tier === 'free' ? '0.02' : '1') + formData.devBuyAmount).toFixed(2)} SOL)`
             }
           </button>
 

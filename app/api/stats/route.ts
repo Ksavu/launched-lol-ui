@@ -3,8 +3,8 @@ import { Connection, PublicKey } from '@solana/web3.js';
 import { RPC_URL } from '../../../lib/rpc';
 
 const connection = new Connection(RPC_URL, 'confirmed');
-const TOKEN_FACTORY_PROGRAM_ID = new PublicKey('7F4JYKAEs7VhVd9P8E1wHhd8aiwtKYeo1tTxabDqpCvX');
-const BONDING_CURVE_PROGRAM_ID = new PublicKey('21ACVywCBCgrgAx8HpLJM6mJC8pxMzvvi58in5Xv7qej');
+const TOKEN_FACTORY_PROGRAM_ID = new PublicKey('2EaZ6wbHSPWdb1Z5jdTE84kgbQhf4YAR1kY2V13g9SWA');
+const BONDING_CURVE_PROGRAM_ID = new PublicKey('7z8fMX1X3VzPjsFjcc2KafwfGmchWXM5QmVHyDcsXiKi');
 
 export async function GET() {
   try {

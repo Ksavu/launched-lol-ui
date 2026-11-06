@@ -2,8 +2,8 @@ import { Connection, PublicKey, Transaction, TransactionInstruction, Keypair, Sy
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress } from '@solana/spl-token';
 import BN from 'bn.js';
 
-const TOKEN_FACTORY_PROGRAM_ID = new PublicKey('7F4JYKAEs7VhVd9P8E1wHhd8aiwtKYeo1tTxabDqpCvX');
-const BONDING_CURVE_PROGRAM_ID = new PublicKey('21ACVywCBCgrgAx8HpLJM6mJC8pxMzvvi58in5Xv7qej');
+const TOKEN_FACTORY_PROGRAM_ID = new PublicKey('2EaZ6wbHSPWdb1Z5jdTE84kgbQhf4YAR1kY2V13g9SWA');
+const BONDING_CURVE_PROGRAM_ID = new PublicKey('7z8fMX1X3VzPjsFjcc2KafwfGmchWXM5QmVHyDcsXiKi');
 
 // Instruction discriminator from IDL
 const CREATE_TOKEN_DISCRIMINATOR = Buffer.from([84, 52, 204, 228, 24, 140, 234, 75]);
@@ -143,6 +143,7 @@ export async function createTokenManual(
       { pubkey: ASSOCIATED_TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
       { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
+      { pubkey: new PublicKey('GtcpcvS3k24MA3Yhs6bAd1spkdjYmx82KqRxSk6pPWhE'), isSigner: false, isWritable: true },
     ],
     programId: TOKEN_FACTORY_PROGRAM_ID,
     data: data,
@@ -151,7 +152,8 @@ export async function createTokenManual(
   console.log('📦 Creating transaction...');
 
   // Create and send transaction
-  const transaction = new Transaction().add(instruction);
+  const transaction = new Transaction();
+  transaction.add(instruction);
   transaction.feePayer = wallet.publicKey;
   
   const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');

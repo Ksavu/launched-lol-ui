@@ -3,8 +3,8 @@ import { Connection, PublicKey } from '@solana/web3.js';
 import { RPC_URL } from '../../../../lib/rpc';
 
 const connection = new Connection(RPC_URL, 'confirmed');
-const TOKEN_FACTORY_PROGRAM_ID = new PublicKey('7F4JYKAEs7VhVd9P8E1wHhd8aiwtKYeo1tTxabDqpCvX');
-const BONDING_CURVE_PROGRAM_ID = new PublicKey('21ACVywCBCgrgAx8HpLJM6mJC8pxMzvvi58in5Xv7qej');
+const TOKEN_FACTORY_PROGRAM_ID = new PublicKey('2EaZ6wbHSPWdb1Z5jdTE84kgbQhf4YAR1kY2V13g9SWA');
+const BONDING_CURVE_PROGRAM_ID = new PublicKey('7z8fMX1X3VzPjsFjcc2KafwfGmchWXM5QmVHyDcsXiKi');
 
 export async function GET(
   request: Request,
@@ -112,6 +112,10 @@ export async function GET(
     let solCollected = 0;
     let tokensSold = 0;
     let isActive = false;
+    let athPrice = 0; // scaled by 1e15
+    let jeetTaxTotal = 0;
+    let inAthZone = false;
+    let jeetTaxEnabled = false;
     let graduated = false;
     let virtualSolReserves = 0;
     let virtualTokenReserves = 0;
@@ -138,6 +142,19 @@ export async function GET(
           virtualTokenReserves = Number(curveData.readBigUInt64LE(144)); // ✅ offset 144
           isActive = curveData[168] === 1;
           graduated = curveData[187] === 1;
+
+          // Jeet tax fields (new program version only: account is >= 295 bytes)
+          if (curveData.length >= 296) {
+            jeetTaxEnabled = curveData[295] === 1;
+            athPrice = Number(curveData.readBigUInt64LE(271));
+            jeetTaxTotal = Number(curveData.readBigUInt64LE(287)) / 1e9;
+            const vSol = curveData.readBigUInt64LE(136);
+            const vTok = curveData.readBigUInt64LE(144);
+            if (vTok > BigInt(0)) {
+              const cur = (vSol * BigInt(10) ** BigInt(15)) / vTok;
+              inAthZone = jeetTaxEnabled && cur * BigInt(10000) >= BigInt(athPrice) * BigInt(9900);
+            }
+          }
           
           console.log('📊 Bonding curve data:', {
             totalSupply,
@@ -222,6 +239,10 @@ export async function GET(
       virtualSolReserves, // ✅ Added
       virtualTokenReserves, // ✅ Added
       totalSupply, // ✅ Added
+      athPrice,
+      jeetTaxTotal,
+      inAthZone: bondingCurveStatus === 'valid' && inAthZone,
+      jeetTaxEnabled,
     };
 
     return NextResponse.json({ token: tokenData });
