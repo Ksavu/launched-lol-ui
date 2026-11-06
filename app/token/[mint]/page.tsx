@@ -967,9 +967,9 @@ export default function TokenPage() {
           {/* Right Column */}
           <div className="lg:col-span-2 space-y-6 lg:space-y-8">
             {/* Chart */}
-            <div className="bg-white rounded-xl p-4 sm:p-6 border-2 border-line">
-              <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-                <h2 className="text-xl sm:text-2xl font-bold text-ink">Price Chart</h2>
+            <div className="bg-[#0f0f14] rounded-xl p-4 sm:p-5 border border-white/10">
+              <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
+                <h2 className="text-lg sm:text-xl font-bold text-white">Market Cap Chart <span className="text-xs font-medium text-[#8b8b99]">(USD)</span></h2>
                 <div className="flex gap-2">
                   {[
                     { label: '1m', value: 60 },
@@ -981,7 +981,7 @@ export default function TokenPage() {
                     <button
                       key={interval.value}
                       onClick={() => setChartInterval(interval.value as any)}
-                      className={`px-3 py-1 rounded text-sm font-semibold transition ${chartInterval === interval.value ? 'bg-brand text-white' : 'bg-panel text-muted hover:bg-[#e7dbf6]'
+                      className={`px-3 py-1 rounded text-sm font-semibold transition ${chartInterval === interval.value ? 'bg-brand text-white' : 'bg-white/5 text-[#8b8b99] hover:bg-white/10'
                         }`}
                     >
                       {interval.label}
@@ -989,7 +989,7 @@ export default function TokenPage() {
                   ))}
                 </div>
               </div>
-              <TradingViewChart data={chartData} />
+              <TradingViewChart data={chartData} supply={1_000_000_000} solPrice={solPrice} />
             </div>
 
             {/* Trading Section */}
