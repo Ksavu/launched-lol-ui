@@ -4,7 +4,7 @@ import { RPC_URL } from '../../../../lib/rpc';
 
 const connection = new Connection(RPC_URL, 'confirmed');
 const TOKEN_FACTORY_PROGRAM_ID = new PublicKey('2EaZ6wbHSPWdb1Z5jdTE84kgbQhf4YAR1kY2V13g9SWA');
-const BONDING_CURVE_PROGRAM_ID = new PublicKey('7z8fMX1X3VzPjsFjcc2KafwfGmchWXM5QmVHyDcsXiKi');
+const BONDING_CURVE_PROGRAM_ID = new PublicKey('21ACVywCBCgrgAx8HpLJM6mJC8pxMzvvi58in5Xv7qej');
 
 export async function GET(
   request: Request,
@@ -114,6 +114,8 @@ export async function GET(
     let isActive = false;
     let athPrice = 0; // scaled by 1e15
     let jeetTaxTotal = 0;
+    let creatorFeesUnclaimed = 0;
+    let creatorFeesTotal = 0;
     let inAthZone = false;
     let jeetTaxEnabled = false;
     let graduated = false;
@@ -146,6 +148,8 @@ export async function GET(
           // Jeet tax fields (new program version only: account is >= 295 bytes)
           if (curveData.length >= 296) {
             jeetTaxEnabled = curveData[295] === 1;
+            creatorFeesUnclaimed = Number(curveData.readBigUInt64LE(255)) / 1e9;
+            creatorFeesTotal = Number(curveData.readBigUInt64LE(263)) / 1e9;
             athPrice = Number(curveData.readBigUInt64LE(271));
             jeetTaxTotal = Number(curveData.readBigUInt64LE(287)) / 1e9;
             const vSol = curveData.readBigUInt64LE(136);
@@ -241,6 +245,8 @@ export async function GET(
       totalSupply, // ✅ Added
       athPrice,
       jeetTaxTotal,
+      creatorFeesUnclaimed,
+      creatorFeesTotal,
       inAthZone: bondingCurveStatus === 'valid' && inAthZone,
       jeetTaxEnabled,
     };

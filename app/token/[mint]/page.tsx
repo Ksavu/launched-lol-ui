@@ -39,6 +39,8 @@ interface TokenData {
   inAthZone?: boolean;
   jeetTaxEnabled?: boolean;
   jeetTaxTotal?: number;
+  creatorFeesUnclaimed?: number;
+  creatorFeesTotal?: number;
 }
 
 interface CandleData {
@@ -582,6 +584,25 @@ export default function TokenPage() {
 
     } catch (error: any) {
       alert(`Error: ${error.message}`);
+    } finally {
+      setTrading(false);
+    }
+  };
+
+  const handleClaimRewards = async () => {
+    if (!connected || !publicKey || !token) return;
+    setTrading(true);
+    try {
+      const { claimCreatorRewards } = await import('../../../lib/bonding-curve-client');
+      const wallet = { publicKey, signTransaction, signAllTransactions };
+      const tx = await claimCreatorRewards(connection, wallet, token.address);
+      alert(`Rewards claimed!\n\nTX: https://solscan.io/tx/${tx}?cluster=devnet`);
+      const response = await fetch(`/api/tokens/${mint}`);
+      const data = await response.json();
+      if (data.token) setToken(data.token);
+    } catch (error: any) {
+      console.error(error);
+      alert(`Error: ${error.message || error.toString()}`);
     } finally {
       setTrading(false);
     }
@@ -1133,6 +1154,34 @@ export default function TokenPage() {
                 </div>
               </div>
             )}
+
+            {/* Creator rewards */}
+            {connected &&
+              publicKey &&
+              token.creator === publicKey.toBase58() &&
+              token.bondingCurveStatus === 'valid' && (
+                <div className="bg-white rounded-xl p-6 border-2 border-line">
+                  <h3 className="text-xl font-bold text-ink mb-1">💰 Creator Rewards</h3>
+                  <p className="text-sm text-muted mb-4">You earn 0.3% of every trade on your token.</p>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <p className="text-xs text-muted">Unclaimed</p>
+                      <p className="text-2xl font-bold text-brand">{(token.creatorFeesUnclaimed ?? 0).toFixed(4)} SOL</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-muted">Earned all-time</p>
+                      <p className="text-lg font-semibold text-ink">{(token.creatorFeesTotal ?? 0).toFixed(4)} SOL</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleClaimRewards}
+                    disabled={trading || (token.creatorFeesUnclaimed ?? 0) <= 0}
+                    className="w-full bg-brand hover:opacity-90 disabled:bg-[#d9c9ed] text-white font-bold py-3 rounded-lg transition"
+                  >
+                    {trading ? 'Claiming...' : 'Claim rewards'}
+                  </button>
+                </div>
+              )}
 
             {/* ✅ CLAIM DEV TOKENS - Fixed Logic */}
             {connected &&

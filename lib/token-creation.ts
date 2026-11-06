@@ -3,7 +3,7 @@ import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddres
 import BN from 'bn.js';
 
 const TOKEN_FACTORY_PROGRAM_ID = new PublicKey('2EaZ6wbHSPWdb1Z5jdTE84kgbQhf4YAR1kY2V13g9SWA');
-const BONDING_CURVE_PROGRAM_ID = new PublicKey('7z8fMX1X3VzPjsFjcc2KafwfGmchWXM5QmVHyDcsXiKi');
+const BONDING_CURVE_PROGRAM_ID = new PublicKey('21ACVywCBCgrgAx8HpLJM6mJC8pxMzvvi58in5Xv7qej');
 
 // Instruction discriminator from IDL
 const CREATE_TOKEN_DISCRIMINATOR = Buffer.from([84, 52, 204, 228, 24, 140, 234, 75]);

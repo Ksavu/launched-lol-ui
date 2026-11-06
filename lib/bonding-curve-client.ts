@@ -16,7 +16,7 @@ import {
 import { Buffer } from 'buffer';
 // Now Buffer will have writeBigInt64LE available
 
-const BONDING_CURVE_PROGRAM_ID = new PublicKey('7z8fMX1X3VzPjsFjcc2KafwfGmchWXM5QmVHyDcsXiKi');
+const BONDING_CURVE_PROGRAM_ID = new PublicKey('21ACVywCBCgrgAx8HpLJM6mJC8pxMzvvi58in5Xv7qej');
 const PLATFORM_WALLET = new PublicKey('GtcpcvS3k24MA3Yhs6bAd1spkdjYmx82KqRxSk6pPWhE'); 
 const RENT_SYSVAR = new PublicKey('SysvarRent111111111111111111111111111111111');
 
@@ -587,4 +587,34 @@ export async function releaseDevTokens(
     console.error('❌ Error claiming dev tokens:', error);
     throw error;
   }
+}
+
+export async function claimCreatorRewards(
+  connection: Connection,
+  wallet: any,
+  mintAddress: string
+) {
+  const mintPubkey = new PublicKey(mintAddress);
+  const [bondingCurvePDA] = PublicKey.findProgramAddressSync(
+    [Buffer.from('bonding-curve'), mintPubkey.toBuffer()],
+    BONDING_CURVE_PROGRAM_ID
+  );
+  // discriminator for claim_creator_rewards
+  const instruction = {
+    keys: [
+      { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+      { pubkey: bondingCurvePDA, isSigner: false, isWritable: true },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    ],
+    programId: BONDING_CURVE_PROGRAM_ID,
+    data: Buffer.from([14, 215, 177, 181, 221, 193, 125, 85]),
+  };
+  const transaction = new Transaction().add(instruction);
+  transaction.feePayer = wallet.publicKey;
+  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+  transaction.recentBlockhash = blockhash;
+  const signedTx = await wallet.signTransaction(transaction);
+  const txid = await connection.sendRawTransaction(signedTx.serialize());
+  await connection.confirmTransaction({ signature: txid, blockhash, lastValidBlockHeight }, 'confirmed');
+  return txid;
 }

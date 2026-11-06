@@ -3,7 +3,7 @@ import { Connection, PublicKey } from '@solana/web3.js';
 import { RPC_URL } from '../../../../lib/rpc';
 
 const connection = new Connection(RPC_URL, 'confirmed');
-const BONDING_CURVE_PROGRAM_ID = new PublicKey('7z8fMX1X3VzPjsFjcc2KafwfGmchWXM5QmVHyDcsXiKi');
+const BONDING_CURVE_PROGRAM_ID = new PublicKey('21ACVywCBCgrgAx8HpLJM6mJC8pxMzvvi58in5Xv7qej');
 
 interface Trade {
   type: 'buy' | 'sell';
