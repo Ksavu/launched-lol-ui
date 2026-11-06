@@ -16,7 +16,7 @@ import {
 import { Buffer } from 'buffer';
 // Now Buffer will have writeBigInt64LE available
 
-const BONDING_CURVE_PROGRAM_ID = new PublicKey('21ACVywCBCgrgAx8HpLJM6mJC8pxMzvvi58in5Xv7qej');
+const BONDING_CURVE_PROGRAM_ID = new PublicKey('7z8fMX1X3VzPjsFjcc2KafwfGmchWXM5QmVHyDcsXiKi');
 const PLATFORM_WALLET = new PublicKey('GtcpcvS3k24MA3Yhs6bAd1spkdjYmx82KqRxSk6pPWhE'); 
 const RENT_SYSVAR = new PublicKey('SysvarRent111111111111111111111111111111111');
 
