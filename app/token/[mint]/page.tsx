@@ -82,7 +82,7 @@ export default function TokenPage() {
   const [trading, setTrading] = useState(false);
   const [chartData, setChartData] = useState<CandleData[]>([]);
   const [trades, setTrades] = useState<Trade[]>([]);
-  const [chartInterval, setChartInterval] = useState<60 | 300 | 900 | 3600 | 86400>(60);
+  const [chartInterval, setChartInterval] = useState<1 | 60 | 300 | 900 | 3600 | 14400 | 86400>(60);
   const [holderCount, setHolderCount] = useState<number | null>(null);
   const [holdersList, setHoldersList] = useState<Holder[]>([]);
   const [ws, setWs] = useState<TokenWebSocket | null>(null);
@@ -967,29 +967,29 @@ export default function TokenPage() {
           {/* Right Column */}
           <div className="lg:col-span-2 space-y-6 lg:space-y-8">
             {/* Chart */}
-            <div className="bg-[#0f0f14] rounded-xl p-4 sm:p-5 border border-white/10">
+            <div className="bg-black rounded-xl p-3 sm:p-4 border border-white/10">
               <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
-                <h2 className="text-lg sm:text-xl font-bold text-white">Market Cap Chart <span className="text-xs font-medium text-[#8b8b99]">(USD)</span></h2>
+                <div className="hidden" />
                 <div className="flex gap-2">
                   {[
                     { label: '1m', value: 60 },
                     { label: '5m', value: 300 },
-                    { label: '15m', value: 900 },
                     { label: '1h', value: 3600 },
-                    { label: '1d', value: 86400 },
+                    { label: '4h', value: 14400 },
+                    { label: 'D', value: 86400 },
+                    { label: '1s', value: 1 },
                   ].map((interval) => (
                     <button
                       key={interval.value}
                       onClick={() => setChartInterval(interval.value as any)}
-                      className={`px-3 py-1 rounded text-sm font-semibold transition ${chartInterval === interval.value ? 'bg-brand text-white' : 'bg-white/5 text-[#8b8b99] hover:bg-white/10'
-                        }`}
+                      className={`px-2.5 py-1 text-sm font-semibold transition ${chartInterval === interval.value ? 'text-[#4ade80]' : 'text-[#8b8b99] hover:text-white'}`}
                     >
                       {interval.label}
                     </button>
                   ))}
                 </div>
               </div>
-              <TradingViewChart data={chartData} supply={1_000_000_000} solPrice={solPrice} />
+              <TradingViewChart symbol={token.symbol} data={chartData} supply={1000} solPrice={solPrice} />
             </div>
 
             {/* Trading Section */}

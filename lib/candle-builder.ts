@@ -53,7 +53,18 @@ export function buildCandles(
   });
   
   // Sort by time
-  return candles.sort((a, b) => a.time - b.time);
+  candles.sort((a, b) => a.time - b.time);
+
+  // Make candles continuous like exchange charts: each candle opens at the previous close
+  // (the first one opens at the curve's starting price), so wicks and bodies show real moves.
+  const INITIAL_PRICE = 30 / 1040; // SOL per million tokens at curve start
+  candles.forEach((c, i) => {
+    const open = i === 0 ? INITIAL_PRICE : candles[i - 1].close;
+    c.open = open;
+    c.high = Math.max(c.high, open);
+    c.low = Math.min(c.low, open);
+  });
+  return candles;
 }
 
 // Fill gaps with previous close price
@@ -74,7 +85,7 @@ export function fillCandleGaps(
     // Fill gaps between candles
     const gap = (next.time - current.time) / intervalSeconds;
     
-    for (let j = 1; j < gap; j++) {
+    for (let j = 1; j < Math.min(gap, 300); j++) {
       filled.push({
         time: current.time + (j * intervalSeconds),
         open: current.close,

@@ -14,13 +14,14 @@ interface CandleData {
 
 interface TradingViewChartProps {
   data: CandleData[];
-  /** token supply; with solPrice converts price (SOL/token) into market cap in USD */
+  symbol?: string;
+  /** supply in millions of tokens (trade prices are SOL per million tokens) */
   supply?: number;
   solPrice?: number;
 }
 
-const UP = '#22c55e';
-const DOWN = '#ef4444';
+const UP = '#3ddc84';
+const DOWN = '#f0616d';
 
 function fmtUsd(n: number) {
   const a = Math.abs(n);
@@ -30,7 +31,7 @@ function fmtUsd(n: number) {
   return `$${n.toFixed(2)}`;
 }
 
-export function TradingViewChart({ data, supply = 1_000_000_000, solPrice = 100 }: TradingViewChartProps) {
+export function TradingViewChart({ data, symbol = 'TOKEN', supply = 1000, solPrice = 100 }: TradingViewChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<any>(null);
   const candleRef = useRef<any>(null);
@@ -44,13 +45,13 @@ export function TradingViewChart({ data, supply = 1_000_000_000, solPrice = 100 
 
     const chart = createChart(containerRef.current, {
       layout: {
-        background: { type: ColorType.Solid, color: '#0f0f14' },
+        background: { type: ColorType.Solid, color: '#000000' },
         textColor: '#8b8b99',
         fontSize: 12,
       },
       grid: {
-        vertLines: { color: 'rgba(255,255,255,0.04)' },
-        horzLines: { color: 'rgba(255,255,255,0.04)' },
+        vertLines: { color: 'rgba(255,255,255,0.025)' },
+        horzLines: { color: 'rgba(255,255,255,0.06)' },
       },
       width: containerRef.current.clientWidth,
       height: 440,
@@ -58,7 +59,8 @@ export function TradingViewChart({ data, supply = 1_000_000_000, solPrice = 100 
         timeVisible: true,
         secondsVisible: false,
         borderColor: 'rgba(255,255,255,0.08)',
-        rightOffset: 4,
+        rightOffset: 6,
+        barSpacing: 6,
       },
       rightPriceScale: {
         borderColor: 'rgba(255,255,255,0.08)',
@@ -80,7 +82,9 @@ export function TradingViewChart({ data, supply = 1_000_000_000, solPrice = 100 
       borderDownColor: DOWN,
       wickUpColor: UP,
       wickDownColor: DOWN,
-      priceLineColor: '#8b8b99',
+      priceLineColor: '#4ade80',
+      priceLineStyle: 3,
+      priceLineWidth: 1,
       priceFormat: { type: 'custom', formatter: (p: number) => fmtUsd(p), minMove: 0.01 },
     });
     candleRef.current = candles;
@@ -141,21 +145,21 @@ export function TradingViewChart({ data, supply = 1_000_000_000, solPrice = 100 
   const color = change >= 0 ? UP : DOWN;
 
   return (
-    <div className="relative w-full overflow-hidden rounded-lg border border-white/10 bg-[#0f0f14]">
+    <div className="relative w-full overflow-hidden rounded-lg border border-white/10 bg-[#000000]">
       {shown && (
-        <div className="pointer-events-none absolute left-3 top-2 z-10 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] font-medium text-[#8b8b99]">
-          <span>MC</span>
-          <span>O <b style={{ color }}>{fmtUsd(shown.o)}</b></span>
-          <span>H <b style={{ color }}>{fmtUsd(shown.h)}</b></span>
-          <span>L <b style={{ color }}>{fmtUsd(shown.l)}</b></span>
-          <span>C <b style={{ color }}>{fmtUsd(shown.c)}</b></span>
-          <b style={{ color }}>{change >= 0 ? '+' : ''}{change.toFixed(2)}%</b>
-          <span>Vol <b className="text-[#c9c9d4]">{shown.v.toFixed(2)} SOL</b></span>
+        <div className="pointer-events-none absolute left-3 top-2 z-10 text-[13px] font-medium text-[#8b8b99]">
+          <div>{symbol}/SOL Market Cap (USD) · launched.lol</div>
+          <div className="mt-0.5 flex flex-wrap gap-x-3">
+            <b style={{ color }}>{fmtUsd(shown.c)}</b>
+            <b style={{ color }}>{change >= 0 ? '+' : ''}{change.toFixed(2)}%</b>
+            <span className="text-[11px]">O {fmtUsd(shown.o)} H {fmtUsd(shown.h)} L {fmtUsd(shown.l)}</span>
+            <span className="text-[11px]">Vol <b className="text-[#c9c9d4]">{shown.v.toFixed(2)} SOL</b></span>
+          </div>
         </div>
       )}
       <div ref={containerRef} className="w-full" style={{ minHeight: 440 }} />
       {data.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#0f0f14]">
+        <div className="absolute inset-0 flex items-center justify-center bg-[#000000]">
           <div className="text-center">
             <p className="mb-2 text-lg text-[#c9c9d4]">📈 No trading data yet</p>
             <p className="text-sm text-[#8b8b99]">Chart will appear after first trade</p>
